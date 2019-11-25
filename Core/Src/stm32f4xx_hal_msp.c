@@ -591,7 +591,10 @@ void HAL_TIM_Base_MspInit(TIM_HandleTypeDef* htim_base)
   if(htim_base->Instance==TIM1)
   {
   /* USER CODE BEGIN TIM1_MspInit 0 */
-
+    TIM_OC_InitTypeDef OC_Config;
+    OC_Config.OCMode = TIM_OCMODE_ACTIVE;
+    OC_Config.OCPolarity = TIM_OCPOLARITY_HIGH;
+    TIM_OC2_SetConfig(TIM1,&OC_Config);
   /* USER CODE END TIM1_MspInit 0 */
     /* Peripheral clock enable */
     __HAL_RCC_TIM1_CLK_ENABLE();
@@ -826,7 +829,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef* huart)
     HAL_NVIC_SetPriority(USART1_IRQn, 5, 0);
     HAL_NVIC_EnableIRQ(USART1_IRQn);
   /* USER CODE BEGIN USART1_MspInit 1 */
-
+ // __HAL_UART_ENABLE_IT( huart, UART_IT_IDLE );
   /* USER CODE END USART1_MspInit 1 */
   }
 

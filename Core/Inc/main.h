@@ -67,7 +67,7 @@ extern "C" {
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
-
+typedef enum {false, true} bool;
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/

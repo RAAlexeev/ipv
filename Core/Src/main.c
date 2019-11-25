@@ -1,50 +1,8 @@
 /* USER CODE BEGIN Header */
 /**
-  ******************************************************************************
-  * @file           : main.c
-  * @brief          : Main program body
-  ******************************************************************************
-  * This notice applies to any and all portions of this file
-  * that are not between comment pairs USER CODE BEGIN and
-  * USER CODE END. Other portions of this file, whether 
-  * inserted by the user or by software development tools
-  * are owned by their respective copyright owners.
-  *
-  * Copyright (c) 2019 STMicroelectronics International N.V. 
-  * All rights reserved.
-  *
-  * Redistribution and use in source and binary forms, with or without 
-  * modification, are permitted, provided that the following conditions are met:
-  *
-  * 1. Redistribution of source code must retain the above copyright notice, 
-  *    this list of conditions and the following disclaimer.
-  * 2. Redistributions in binary form must reproduce the above copyright notice,
-  *    this list of conditions and the following disclaimer in the documentation
-  *    and/or other materials provided with the distribution.
-  * 3. Neither the name of STMicroelectronics nor the names of other 
-  *    contributors to this software may be used to endorse or promote products 
-  *    derived from this software without specific written permission.
-  * 4. This software, including modifications and/or derivative works of this 
-  *    software, must execute solely and exclusively on microcontroller or
-  *    microprocessor devices manufactured by or for STMicroelectronics.
-  * 5. Redistribution and use of this software other than as permitted under 
-  *    this license is void and will automatically terminate your rights under 
-  *    this license. 
-  *
-  * THIS SOFTWARE IS PROVIDED BY STMICROELECTRONICS AND CONTRIBUTORS "AS IS" 
-  * AND ANY EXPRESS, IMPLIED OR STATUTORY WARRANTIES, INCLUDING, BUT NOT 
-  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
-  * PARTICULAR PURPOSE AND NON-INFRINGEMENT OF THIRD PARTY INTELLECTUAL PROPERTY
-  * RIGHTS ARE DISCLAIMED TO THE FULLEST EXTENT PERMITTED BY LAW. IN NO EVENT 
-  * SHALL STMICROELECTRONICS OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-  * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, 
-  * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF 
-  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING 
-  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-  *
-  ******************************************************************************
+  * @brief  Function implementing the defaultTask thread.
+  * @param  argument: Not used 
+  * @retval None
   */
 /* USER CODE END Header */
 
@@ -54,8 +12,16 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "FFT.h"   
+#include "menu.h"
+#include "modbus-master/modbus.h"
+#include "EEPROM.h"
 /* USER CODE END Includes */
+
+
+
+
+
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
@@ -136,6 +102,7 @@ osStaticSemaphoreDef_t myCountingSemBUT2ControlBlock;
 osSemaphoreId myCountingSemTIM4Handle;
 osStaticSemaphoreDef_t myCountingSemTIM4ControlBlock;
 /* USER CODE BEGIN PV */
+/* Private variables ---------------------------------------------------------*/
 
 /* USER CODE END PV */
 
@@ -163,14 +130,22 @@ void StartTask_S2(void const * argument);
 void StartTaskModbus(void const * argument);
 void myTimeCallbackBUT2(void const * argument);
 void myTimerCalbakBUT1(void const * argument);
+//int __io_putchar(int ch) __attribute__((weak));
 
 /* USER CODE BEGIN PFP */
+/* Private function prototypes -----------------------------------------------*/
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+ CH_t CH[2] = {0};
+ void _Error_Handler(uint8_t *f,uint16_t l){
+  Error_Handler();
+ }
+ int __io_putchar(int ch){
+	return ITM_SendChar((ch));
+ }
 /* USER CODE END 0 */
 
 /**
@@ -180,6 +155,7 @@ void myTimerCalbakBUT1(void const * argument);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
+   
 
   /* USER CODE END 1 */
 
@@ -214,10 +190,10 @@ int main(void)
   MX_TIM4_Init();
   MX_TIM2_Init();
   MX_USB_OTG_FS_PCD_Init();
-  MX_IWDG_Init();
-  MX_WWDG_Init();
+ // MX_IWDG_Init();
+  //MX_WWDG_Init();
   /* USER CODE BEGIN 2 */
-
+	ITM_SendChar( 65 );
   /* USER CODE END 2 */
 
   /* Create the mutex(es) */
@@ -231,16 +207,17 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
+     
   /* USER CODE END RTOS_MUTEX */
 
   /* Create the semaphores(s) */
   /* definition and creation of myCountingSem_S01 */
   osSemaphoreStaticDef(myCountingSem_S01, &myCountingSem_S01ControlBlock);
-  myCountingSem_S01Handle = osSemaphoreCreate(osSemaphore(myCountingSem_S01), 5);
+  myCountingSem_S01Handle = osSemaphoreCreate(osSemaphore(myCountingSem_S01), 2);
 
   /* definition and creation of myCountingSem_S02 */
   osSemaphoreStaticDef(myCountingSem_S02, &myCountingSem_S05);
-  myCountingSem_S02Handle = osSemaphoreCreate(osSemaphore(myCountingSem_S02), 5);
+  myCountingSem_S02Handle = osSemaphoreCreate(osSemaphore(myCountingSem_S02), 2);
 
   /* definition and creation of myCountingSemBUT1 */
   osSemaphoreStaticDef(myCountingSemBUT1, &myCountingSemBUT1ControlBlock);
@@ -256,6 +233,9 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
   /* add semaphores, ... */
+  osSemaphoreWait( myCountingSem_S01Handle, portMAX_DELAY);
+  osSemaphoreWait( myCountingSem_S01Handle, portMAX_DELAY); 
+
   /* USER CODE END RTOS_SEMAPHORES */
 
   /* Create the timer(s) */
@@ -281,19 +261,19 @@ int main(void)
   myTask_S1Handle = osThreadCreate(osThread(myTask_S1), NULL);
 
   /* definition and creation of myTask_S2 */
-  osThreadStaticDef(myTask_S2, StartTask_S2, osPriorityNormal, 0, 500, myTask_S2Buffer, &myTask_S2ControlBlock);
-  myTask_S2Handle = osThreadCreate(osThread(myTask_S2), NULL);
+ // osThreadStaticDef(myTask_S2, StartTask_S2, osPriorityNormal, 0, 500, myTask_S2Buffer, &myTask_S2ControlBlock);
+ // myTask_S2Handle = osThreadCreate(osThread(myTask_S2), NULL);
 
   /* definition and creation of myTaskModbus */
-  osThreadStaticDef(myTaskModbus, StartTaskModbus, osPriorityBelowNormal, 0, 128, myTaskModbusBuffer, &myTaskModbusControlBlock);
-  myTaskModbusHandle = osThreadCreate(osThread(myTaskModbus), NULL);
+//  osThreadStaticDef(myTaskModbus, StartTaskModbus, osPriorityBelowNormal, 0, 128, myTaskModbusBuffer, &myTaskModbusControlBlock);
+//  myTaskModbusHandle = osThreadCreate(osThread(myTaskModbus), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_QUEUES */
-  /* add queues, ... */
+  /* add queues, ... */ 
   /* USER CODE END RTOS_QUEUES */
  
 
@@ -306,9 +286,11 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+
   }
   /* USER CODE END 3 */
 }
@@ -402,7 +384,7 @@ static void MX_ADC1_Init(void)
   */
   sConfig.Channel = ADC_CHANNEL_2;
   sConfig.Rank = 1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_15CYCLES;
+  sConfig.SamplingTime = ADC_SAMPLETIME_480CYCLES;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     Error_Handler();
@@ -693,7 +675,7 @@ static void MX_TIM2_Init(void)
   htim2.Instance = TIM2;
   htim2.Init.Prescaler = 21;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 500;
+  htim2.Init.Period = 250;//501;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
   {
@@ -1039,6 +1021,153 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+extern void display();
+
+void testMaxVelocity(float32_t * velocity,uint8_t * tOut, float32_t max , GPIO_TypeDef * GPIO_port, uint16_t GPIO_pin)
+{
+  if ( *velocity <  max ) 
+    *tOut = 10;
+  else 
+    if (!--tOut)
+    {
+      *tOut = 10;
+      HAL_GPIO_WritePin(GPIO_port, GPIO_pin, GPIO_PIN_RESET);
+    } 
+}
+
+void PWM(float32_t * velocity, float32_t min, float32_t max)
+{
+
+  uint16_t dutyCycle = (uint16_t)(*velocity * 0xFFFF / ( max - min )) + 0xFFFF/100 * 20 * 4/100;
+    
+  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, dutyCycle);
+}
+
+
+void set_mb_FFT_regs(uint8_t CHn,  float32_t * data)
+{
+    ++data;
+    
+    for( uint16_t i = CHn * fftLenReal/4;  i < CHn * fftLenReal/4 + fftLenReal/4; ++i, data+=4 )
+    {
+     
+      ModBus_SetRegister( i + 10, (uint16_t)( (int8_t)((*(data) + *(data + 1)) * 5 ) | ((uint8_t)(*(data + 2) + *(data + 3)) * 5  << 8) ));
+
+    }
+}
+
+void setCoef( uint8_t CHn , uint8_t Coef )
+{
+
+  HAL_GPIO_DeInit(GPIOA, GPIO_PIN_4);
+  uint16_t pin;
+  GPIO_TypeDef * port;
+  
+  switch(CHn)
+  {
+   case 0:
+
+     pin = SS_Pin;
+     port = SS_GPIO_Port;
+     break;
+
+   case 1:  
+     pin = SS_3_Pin;
+     port = SS_3_GPIO_Port;
+     break;
+  }
+  
+  if ( osSemaphoreWait( myMutex_SPI1Handle, portMAX_DELAY ) != osOK )
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+  
+  uint16_t data = 1 << 9 | ( Coef << 2 );
+  
+  HAL_GPIO_WritePin(port, pin, GPIO_PIN_SET); 
+  HAL_Delay(1);
+  HAL_GPIO_WritePin(port, pin, GPIO_PIN_RESET);
+  
+  if ( HAL_OK != HAL_SPI_Transmit( &hspi1, (uint8_t *)data, 1 , 100) ) 
+  {
+     _Error_Handler(__FILE__, __LINE__);
+  }
+  
+  HAL_GPIO_WritePin(port, pin, GPIO_PIN_SET); 
+  HAL_Delay(1);
+  HAL_GPIO_WritePin(port, pin, GPIO_PIN_RESET);
+
+  data = 3 << 10;
+  if ( HAL_OK != HAL_SPI_Transmit( &hspi1, (uint8_t *)data, 1, 100 ) ) 
+  {
+     _Error_Handler(__FILE__, __LINE__);
+  }
+  
+  GPIO_InitTypeDef GPIO_InitStruct;
+  GPIO_InitStruct.Pin = GPIO_PIN_4;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  GPIO_InitStruct.Alternate = GPIO_AF5_SPI1;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+ 
+  osSemaphoreRelease( myMutex_SPI1Handle );
+  
+}
+
+
+/* USART1 reinit function */
+void My_USART1_UART_ReInit( void )
+{
+const uint32_t BaudRate[] = {115200, 4800, 9600, 19200, 38400, 57600, 115200};  
+  if (HAL_UART_DeInit(&huart1) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+  
+  union{
+    uint16_t raw;
+    struct{
+      unsigned baudRate: 7;
+      unsigned wordLength : 4;
+      unsigned parity : 3;
+      unsigned stopBits : 2;
+    };
+    
+  } param = {ModBus_GetRegister( 0 )};
+  
+  huart1.Instance = USART1;
+  
+  huart1.Init.BaudRate = BaudRate[ param.baudRate ];
+  
+  if( param.wordLength == 8 || param.wordLength == 0 )
+    huart1.Init.WordLength = UART_WORDLENGTH_8B;
+  else 
+    huart1.Init.WordLength = UART_WORDLENGTH_9B;
+  
+  if( param.stopBits <= 1 )
+    huart1.Init.StopBits = UART_STOPBITS_1;
+  else
+     huart1.Init.StopBits = UART_STOPBITS_2;
+  
+   switch( param.parity )
+   {
+    case 0: huart1.Init.Parity = UART_PARITY_NONE;
+      break;
+    case 1:  huart1.Init.Parity = UART_PARITY_ODD;
+      break;
+    case 2: huart1.Init.Parity = UART_PARITY_EVEN;
+      break;
+   }
+  huart1.Init.Mode = UART_MODE_TX_RX;
+  huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart1) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+}
 
 /* USER CODE END 4 */
 
@@ -1053,11 +1182,29 @@ void StartDefaultTask(void const * argument)
 {
 
   /* USER CODE BEGIN 5 */
+  setCoef(0,255);
+   menuInit();
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+    
+    if( GPIO_PIN_SET ==  HAL_GPIO_ReadPin(SENS1_FAIL_GPIO_Port, SENS1_FAIL_Pin ) )
+    {
+      CH[0].error = eFAIL;
+    }
+    else
+      CH[0].error = eOK;
+         
+    if( GPIO_PIN_SET ==  HAL_GPIO_ReadPin(SENS2_FAIL_GPIO_Port, SENS2_FAIL_Pin ) )
+    {
+      CH[1].error = eFAIL;
+    }
+    else
+      CH[1].error = eOK;
+         
+    display();
   }
+  
   /* USER CODE END 5 */ 
 }
 
@@ -1068,13 +1215,73 @@ void StartDefaultTask(void const * argument)
 * @retval None
 */
 /* USER CODE END Header_StartTask_S1 */
+void recirculate(void  * _src,  float32_t * velocity);
 void StartTask_S1(void const * argument)
 {
   /* USER CODE BEGIN StartTask_S1 */
+  HAL_TIM_Base_Start(&htim2);
+  static uint16_t data1[fftLenReal],data2[fftLenReal];
+  static uint8_t pinpong_flag = 0;
+  if (HAL_OK != HAL_ADC_Start_DMA( &hadc1, (uint32_t *)data1, fftLenReal  )) 
+    {
+       _Error_Handler(__FILE__, __LINE__);
+    }    
+  if (ARM_MATH_SUCCESS != rfft_init()) while(1); 
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+    if ( osSemaphoreWait( myCountingSem_S01Handle, portMAX_DELAY) != osOK ) 
+    {
+       _Error_Handler(__FILE__, __LINE__);
+    }
+    if(pinpong_flag){
+        if ( HAL_OK != HAL_ADC_Start_DMA( &hadc1, (uint32_t *)data1, fftLenReal ))
+        {
+           _Error_Handler(__FILE__, __LINE__);
+        }
+        recirculate(data2,&CH[0].velocity);
+    }else{
+
+        if ( HAL_OK != HAL_ADC_Start_DMA( &hadc1, (uint32_t *)data2, fftLenReal ))
+        {
+           _Error_Handler(__FILE__, __LINE__);
+        }
+        recirculate(data1,&CH[0].velocity);
+    }
+    pinpong_flag=!pinpong_flag;
+
+
+    // minMaxAvr((q15_t*)data1);
+    // rfft( data1,  fftLenReal/200 * mainMenu.items[0][iF_lo].param,  fftLenReal/200 * mainMenu.items[0][iF_hi].param,&CH[0].velocity);
+
+//=ьеярм.б.дея\("\2\1"\)\r
+    //set_mb_FFT_regs(0,(float32_t *)data1);
+    
+   // if(mainMenu.CHn == 0) 
+   //   PWM(&CH[0].velocity, mainMenu.items[0][iVmin].param/10.f, mainMenu.items[0][iVmax].param/10.f);
+    
+    uint8_t tOut = 10; 
+    
+   // testMaxVelocity(&CH[0].velocity, &tOut, mainMenu.items[0][iVrly].param/10.f, RELAY_1_GPIO_Port, RELAY_1_Pin );
+    
+//    if ( osSemaphoreWait(myCountingSem_S01Handle, portMAX_DELAY) != osOK )
+//    {
+//      _Error_Handler(__FILE__, __LINE__);
+//    }
+
+//    minMaxAvr((q15_t*)data2);
+//
+//    rfft( pS, data2, fftLenReal* mainMenu.items[0][iF_lo].param / 200 , fftLenReal * mainMenu.items[0][iF_hi].param / 200, &CH[0].velocity );
+//    
+//    set_mb_FFT_regs(0,(float32_t *)data2);
+    
+    if( mainMenu.CHn == 0 ) 
+      PWM(&CH[0].velocity, mainMenu.items[0][iVmin].param/10.f, mainMenu.items[0][iVmax].param/10.f);   
+      
+    //testMaxVelocity( &CH[0].velocity, &tOut, mainMenu.items[0][iVrly].param/10.f, RELAY_1_GPIO_Port, RELAY_1_Pin );
+    
+    
+    //osDelay(1);
   }
   /* USER CODE END StartTask_S1 */
 }
@@ -1089,10 +1296,73 @@ void StartTask_S1(void const * argument)
 void StartTask_S2(void const * argument)
 {
   /* USER CODE BEGIN StartTask_S2 */
+
+  static uint32_t data1[fftLenReal],data2[fftLenReal];
+
+  if ( osSemaphoreWait(myMutex_SPI1Handle, portMAX_DELAY) != osOK )
+  {
+       _Error_Handler(__FILE__, __LINE__);
+  }
+  
+  if ( HAL_OK == HAL_SPI_Receive_DMA( &hspi1, (uint8_t *)data1, fftLenReal ) )
+  {
+     _Error_Handler(__FILE__, __LINE__);
+  }
+  
+ /* if (ARM_MATH_SUCCESS != rfft_init(pS))
+  {
+     _Error_Handler(__FILE__, __LINE__);
+  }*/
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+    if ( osSemaphoreWait( myCountingSem_S02Handle, portMAX_DELAY) != osOK )
+    {
+       _Error_Handler(__FILE__, __LINE__);
+    }
+    
+    
+    if ( HAL_OK != HAL_SPI_Receive_DMA( &hspi1,(uint8_t *)data2, fftLenReal ) )
+    {
+       _Error_Handler(__FILE__, __LINE__);
+    }
+    
+  // rfft(pS, data1, fftLenReal*mainMenu.items[0][iF_lo].param /200,  fftLenReal * mainMenu.items[0][iF_hi].param /200, &CH[1].velocity);
+
+ //   set_mb_FFT_regs(1 ,(float32_t *)data1);
+
+    uint8_t tOut = 10; 
+    
+    testMaxVelocity(&CH[1].velocity, &tOut, mainMenu.items[1][iVmax].param/10.f, RELAY_2_GPIO_Port, RELAY_2_Pin );
+    
+    if(mainMenu.CHn == 1) 
+       PWM(&CH[1].velocity, mainMenu.items[1][iVmin].param/10.f, mainMenu.items[1][iVmax].param/10.f);
+    
+    if ( osSemaphoreWait( myCountingSem_S02Handle, portMAX_DELAY ) != osOK ) 
+    {
+      _Error_Handler(__FILE__, __LINE__);
+    }
+   
+      osSemaphoreRelease( myMutex_SPI1Handle );
+    
+    if ( osSemaphoreWait( myMutex_SPI1Handle, portMAX_DELAY) != osOK )
+    {
+      _Error_Handler(__FILE__, __LINE__);
+    }
+    
+    if( HAL_OK != HAL_SPI_Receive_DMA( &hspi1, (uint8_t *)data1, fftLenReal ) ) 
+    {
+       _Error_Handler(__FILE__, __LINE__);
+    }
+    
+    rfft( data2, fftLenReal/200*mainMenu.items[1][iF_lo].param,  fftLenReal/200 * mainMenu.items[1][iF_hi].param, &CH[1].velocity);
+    
+    set_mb_FFT_regs(1 ,(float32_t *)data2);
+    
+    if(mainMenu.CHn == 1) 
+      PWM(&CH[1].velocity, mainMenu.items[1][iVmin].param/10.f, mainMenu.items[1][iVmax].param/10.f);
+    
+    testMaxVelocity(&CH[1].velocity, &tOut, mainMenu.items[1][iVmax].param/10.f, RELAY_2_GPIO_Port, RELAY_2_Pin );
   }
   /* USER CODE END StartTask_S2 */
 }
@@ -1107,10 +1377,30 @@ void StartTask_S2(void const * argument)
 void StartTaskModbus(void const * argument)
 {
   /* USER CODE BEGIN StartTaskModbus */
-  /* Infinite loop */
+  ModBus_Init();
+  extern uint8_t mb_buf_in[256];
+  if( HAL_OK  != HAL_UART_Receive_DMA(&huart1, (uint8_t*)mb_buf_in , 20) )
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }  
+  uint16_t  param; 
+  EE_read(0, (uint8_t *)&param, 2);
+  ModBus_SetRegister(0, param);
+  My_USART1_UART_ReInit();
+/* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+    if ( osSemaphoreWait(myCountingSemTIM4Handle, portMAX_DELAY) != osOK )
+    {
+      _Error_Handler(__FILE__, __LINE__);
+    }
+    
+    if ( ModBusParse( 20 - __HAL_DMA_GET_COUNTER( huart1.hdmarx ) ) )
+    {
+      HAL_UART_Receive_DMA(&huart1, (uint8_t*)mb_buf_in , 20);
+      HAL_NVIC_EnableIRQ(TIM4_IRQn);  
+    }
+    
   }
   /* USER CODE END StartTaskModbus */
 }
@@ -1120,6 +1410,26 @@ void myTimeCallbackBUT2(void const * argument)
 {
   /* USER CODE BEGIN myTimeCallbackBUT2 */
   
+  if ( mainMenu.active ) 
+  {
+    if (!mainMenu.edit)
+    {
+      mainMenu.edit =  1;
+      return;
+    }
+  }
+  else
+    if( !( ++mainMenu.mode < MODES ))
+    {
+      mainMenu.mode = DEFAULTmode;
+    }
+  
+  if( mainMenu.edit &&  ++mainMenu.item()->param > 99 )
+  {  
+    mainMenu.item()->param = 0; 
+   
+  }else 
+     osTimerStart(myTimerBUT1Handle, 10 );
   /* USER CODE END myTimeCallbackBUT2 */
 }
 
@@ -1138,8 +1448,11 @@ void myTimerCalbakBUT1(void const * argument)
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
+ // printf( "Error f:%s l:%i",file, line);  
   /* User can add his own implementation to report the HAL error return state */
-
+  while(1)
+  {
+  }
   /* USER CODE END Error_Handler_Debug */
 }
 
