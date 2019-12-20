@@ -47,6 +47,7 @@
   *
   ******************************************************************************
   */
+
 /* USER CODE END Header */
 
 /* Define to prevent recursive inclusion -------------------------------------*/
@@ -67,7 +68,7 @@ extern "C" {
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
-typedef enum {false, true} bool;
+//typedef enum {false, true} bool;
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
@@ -83,7 +84,7 @@ typedef enum {false, true} bool;
 void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 
 /* Exported functions prototypes ---------------------------------------------*/
-void Error_Handler(void);
+void _Error_Handler(const char *f,const uint16_t line);
 
 /* USER CODE BEGIN EFP */
 

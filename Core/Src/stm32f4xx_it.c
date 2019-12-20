@@ -68,8 +68,8 @@
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-extern osSemaphoreId myCountingSem_S01Handle;
-extern osSemaphoreId myCountingSem_S02Handle;
+//extern osSemaphoreId myCountingSem_S01Handle;
+//extern osSemaphoreId myCountingSem_S02Handle;
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/

@@ -1,7 +1,7 @@
+#include <menu.hpp>
 #include "main.h"
 #include "stm32f4xx_hal.h"
 #include "cmsis_os.h"
-#include "menu.h"
 
 
 extern osSemaphoreId myCountingSemBUT1Handle, myCountingSem_S01Handle, myCountingSem_S02Handle, myCountingSemBUT2Handle, myCountingSemTIM4Handle;
@@ -49,7 +49,8 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 
 void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 {
-  osSemaphoreRelease(myCountingSem_S02Handle);
+ (void)hspi;
+ osSemaphoreRelease(myCountingSem_S02Handle);
 }
 //void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef* hadc)
 //{
@@ -66,10 +67,14 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 {
-  extern UART_HandleTypeDef huart1;
-  extern uint8_t mb_buf_in[256];
-  HAL_UART_Receive_DMA(&huart1, (uint8_t*)mb_buf_in , 20);
-  HAL_NVIC_EnableIRQ(TIM4_IRQn);  
+
+	extern UART_HandleTypeDef huart1;
+	//if(&huart1==huart){ only one huart
+	extern uint8_t mb_buf_in[256];
+
+	  HAL_UART_Receive_DMA(&huart1, (uint8_t*)mb_buf_in , 20);
+  	  HAL_NVIC_EnableIRQ(TIM4_IRQn);
+	//}
 }
 
 

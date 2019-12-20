@@ -1,15 +1,22 @@
 
 
-#include "FFT.h"
 #include <math.h>
-#include "modbus-master/modbus.h"
-#include "menu.h"
-#include "arm_math.h"
-#include <stdlib.h>
 
-	static arm_rfft_fast_instance_f32 S; 
+
+#include "modbus-master/modbus.h"
+#include <stdlib.h>
+#define STM32F405xx
+#define ARM_MATH_CM4
+#include <stdio.h>
+#include  "FFT.h"
+#include "stm32f4xx.h"
+#include "arm_math.h"
+
+
+static arm_rfft_fast_instance_f32 S;
 static arm_iir_lattice_instance_f32  arm_iir_lattice_inst_f32;
-arm_status rfft_init()
+
+int rfft_init()
 {
 	  //  arm_status status = ARM_MATH_SUCCESS;   
 		/* Initialize the CFFT/CIFFT module */  
@@ -42,7 +49,7 @@ arm_status rfft_init()
         pvCoeffs[d] = pvCoeffs[c];
         pvCoeffs[c]=tmp;
       }
-     static float32_t pState[2+fftLenReal];
+     static float32_t pState[2+LEN];
    // arm_iir_lattice_init_f32(&arm_iir_lattice_inst_f32, 4, pkCoeffs, pvCoeffs, pState, fftLenReal);
         return ARM_MATH_SUCCESS;
 
@@ -52,16 +59,16 @@ arm_status rfft_init()
 void rfft(void  * _src, uint16_t begin, uint16_t end, float32_t * velocity ) 
 {	 
   uint16_t   *srcInt = _src;
-  float32_t *bufIn=(float32_t *)malloc(sizeof(float32_t)*fftLenReal), *bufOut=(float32_t *)malloc(sizeof(float32_t)*fftLenReal);
+  float32_t *bufIn=(float32_t *)malloc(sizeof(float32_t)*LEN), *bufOut=(float32_t *)malloc(sizeof(float32_t)*LEN);
       while(!(bufIn && bufOut));
-	for(uint16_t i = 0; i < fftLenReal; i++ )//    3 cycles * fftLenReal
+	for(uint16_t i = 0; i < LEN; i++ )//    3 cycles * fftLenReal
         {
 		bufIn[i] = srcInt[i];//-2027; //    3 cycles
 	}
          
         //   #define M_PI 3.14159265359
        
-        for(int16_t i=0;i <fftLenReal;i+=1)
+        for(int16_t i=0;i <LEN;i+=1)
          // for(int16_t j=0;i <80;i+=1)
           {
           bufIn[i]=sin(i*M_PI/8);
@@ -109,7 +116,7 @@ void rfft(void  * _src, uint16_t begin, uint16_t end, float32_t * velocity )
 //
 //       }
 #define buf bufIn
-        for(uint16_t i =1u , j = 0u; i < fftLenReal; i+=2, ++j){ 
+        for(uint16_t i =1u , j = 0u; i < LEN; i+=2, ++j){
           
           a=buf[i-1];b = buf[i];c=buf[i+1];
           tmp =(a + 4*b + c)/6;//8000;
@@ -117,7 +124,7 @@ void rfft(void  * _src, uint16_t begin, uint16_t end, float32_t * velocity )
         }
        // sum/=SAMPL_F;
        // sum/=6;
-     arm_sqrt_f32( 2*sum/ fftLenReal , velocity );
+     arm_sqrt_f32( 2*sum/ LEN , velocity );
    //   arm_rms_f32(buf,fftLenReal,&tmp );
      // tmp /= fftLenReal;
      // *velocity*=1000;

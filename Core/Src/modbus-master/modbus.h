@@ -29,7 +29,7 @@ extern "C" {
    // grab value of register
    uint16_t ModBus_GetRegister(uint16_t reg);
 
-bool ModBusParse(uint8_t in_count);
+int ModBusParse(uint8_t in_count);
 #ifdef __cplusplus
 }
 #endif
