@@ -3,9 +3,9 @@
 #include "stm32f4xx_hal.h"
 #include "cmsis_os.h"
 
-
 extern osSemaphoreId myCountingSemBUT1Handle, myCountingSem_S01Handle, myCountingSem_S02Handle, myCountingSemBUT2Handle, myCountingSemTIM4Handle;
 extern osTimerId myTimerBUT1Handle, myTimerBUT2Handle;
+extern  void my_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc);
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
  {
@@ -41,11 +41,21 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
    }
  }
 
+
+
+
+
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 {
+	my_ADC_ConvCpltCallback(hadc);
+	/*
   if( hadc->Instance == ADC1 )
   osSemaphoreRelease(myCountingSem_S01Handle);
+  if( hadc->Instance == ADC2 )
+  osSemaphoreRelease(myCountingSem_S02Handle);
+  */
 }
+
 
 void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 {

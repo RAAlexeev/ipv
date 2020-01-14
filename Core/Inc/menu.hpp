@@ -58,6 +58,6 @@ extern struct sMenu mainMenu;
 
 void menuInit(void);
 
-extern void setCoef( uint8_t CHn , uint8_t Coef );
+extern void setCoef( uint8_t CHn , uint16_t Coef );
  
 #endif

@@ -6,8 +6,43 @@
 #include "stm32f4xx.h"
 
 #include "integrator.hpp"
+#include "cmsis_os.h"
+
 #define FILTER
 
+extern "C"  void my_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
+	SignalChenal::HAL_ADC_ConvCpltCallback(hadc);
+}
+
+extern osSemaphoreId  myCountingSem_S01Handle, myCountingSem_S02Handle;
+extern ADC_HandleTypeDef hadc1;
+extern ADC_HandleTypeDef hadc2;
+
+void SignalChenal::HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
+
+	  osSemaphoreRelease((hadc->Instance == ADC1)?myCountingSem_S01Handle:myCountingSem_S02Handle);
+
+	    if ( HAL_OK != HAL_ADC_Start_DMA( hadc, (uint32_t *)(getInstance(hadc)->buffer), LEN ))
+	      {
+	         _Error_Handler(__FILE__, __LINE__);
+	      }
+
+}
+
+SignalChenal::SignalChenal(){
+
+}
+void SignalChenal::init()
+{
+	  if ( HAL_OK != HAL_ADC_Start_DMA( &hadc1, (uint32_t *)SignalChenal::getInstance(&hadc1)->buffer, LEN ))
+	  {
+	     _Error_Handler(__FILE__, __LINE__);
+	  }
+	  if ( HAL_OK != HAL_ADC_Start_DMA( &hadc2, (uint32_t *)SignalChenal::getInstance(&hadc2)->buffer, LEN ))
+	  {
+	     _Error_Handler(__FILE__, __LINE__);
+	  }
+}
 /*void printDouble(double v, int decimalDigits)
 {
   int i = 1;
@@ -18,44 +53,45 @@
   if(fractPart < 0) fractPart *= -1;
   printf("%i.%i", intPart, fractPart);
 }*/
-#ifdef DEBUG
-uint32_t buf[LEN];
-#endif
-extern  void filter( int16_t  *pSrc,float32_t *pDst,uint32_t blockSize);
 
-void Recirculate::calc(int16_t  *srcInt, float32_t *velocity ) {
+extern inline void filter( int16_t  *pSrc, float32_t *pDst, uint32_t blockSize);
+
+void SignalChenal::calc() {
 #define k (0.99f)
 #define N (16000)
 
 	//uint16_t *srcInt = static_cast<uint16_t *>( _src);
 
 
-	CircularBuffer<float32_t,7> velocity_ =  CircularBuffer<float32_t,7>();
+	int16_t *src=buffer;
+    if(buffer==buffer1){
+    	buffer=buffer2;
+    }else{
+    	buffer=buffer1;
+    }
 	//static  float32_t y=0 ;
 
 	float32_t  sumQ=0;
 
 #ifdef FILTER
 
-	float32_t * bufOut_f32=new float32_t[LEN];
+	float32_t * bufOut_f32 = new float32_t[LEN];
 //for(uint16_t j=0;j < LEN/8 ;j++){
-	 filter(srcInt/*+LEN/8*j*/,bufOut_f32,LEN);
-
+	 filter(src/*+LEN/8*j*/, bufOut_f32,  LEN);
+#ifdef DEBUG
+	 float32_t  *tstbuf = new float32_t[400];
+#endif
 	for(uint16_t i = 0; i < LEN; i++ ){
-			y = bufOut_f32[i]+y*k;
+			y = bufOut_f32[i] +y*k;
 
 #else
-	uint32_t sum = 0;
+
 	for(uint16_t i = 0; i < LEN; i++ ){
-			sum+=srcInt[i];
-	   	}
-	float32_t aver = static_cast<float32_t>(sum)/LEN;
-	for(uint16_t i = 0; i < LEN; i++ ){
-		this.y = srcInt[i]-aver/*sin(M_PI/100*i)*/+y*k;
+		y = src[i]-aver/*sin(M_PI/100*i)*/+y*k;
 #endif
 
 #ifdef DEBUG
-		//	buf[i]=(int32_t)y+20000;
+			if(i<400)tstbuf[i]=y;
 #endif
 		//	printf("%i\n",(int)(sin(M_PI/800*i)*100)/*(srcInt[i]-2043)*/);
 			//ITM_SendChar( 65 );
@@ -70,16 +106,23 @@ void Recirculate::calc(int16_t  *srcInt, float32_t *velocity ) {
 		//static uint8_t n = N/fftLenReal;
 		//if(n==0){
 		float32_t v;
-		arm_sqrt_f32( sumQ/LEN, &v);
+		arm_sqrt_f32( sumQ/LEN, &v );
 		(void)sumQ;
 		velocity_.put(v);
-		*velocity = velocity_.average();
+
 		(void)v;
 #ifdef DEBUG
-			char out[100];
-			int32_t velocityInt = static_cast<int32_t>(*velocity);
-			out[sprintf(out,"%i,%i\n",velocityInt,(int)((*velocity-velocityInt)*100))] = 0;
+		delete[] tstbuf;
+			char out[30];
 
+			int32_t velocityInt = static_cast<int32_t>(getVelocity());
+
+			static unsigned  char ch='\n';
+
+			if( ch=='\0' ) ch='\n'; else ch='\0';
+			uint8_t end=sprintf(out,"%i,%i;",(int)velocityInt,(int)((getVelocity()-velocityInt)*100));
+			out[end] = ch;
+			out[end+1] = 0;
 		myUtils::ITM_SendStr(out);
 #endif
 		//s=0;

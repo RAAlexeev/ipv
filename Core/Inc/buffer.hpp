@@ -9,10 +9,10 @@
 #define SRC_BUFFER_HPP_
 #include "arm_math.h"
 
-template <class T, size_t _size>
+template<class T, size_t _size>
  class  CircularBuffer {
 public:
-	explicit CircularBuffer(){
+	constexpr explicit CircularBuffer(){
 		// empty
 	}
 
