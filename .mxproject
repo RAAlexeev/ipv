@@ -7,7 +7,6 @@ HeaderFiles#2=C:/Users/alekseev/Desktop/CurrentTask/IPV5/IPV5.AtolicTS/Core/Inc/
 HeaderFiles#3=C:/Users/alekseev/Desktop/CurrentTask/IPV5/IPV5.AtolicTS/Core/Inc/main.h
 HeaderFolderListSize=1
 HeaderPath#0=C:/Users/alekseev/Desktop/CurrentTask/IPV5/IPV5.AtolicTS/Core/Inc
-HeaderFiles=;
 SourceFileListSize=4
 SourceFiles#0=C:/Users/alekseev/Desktop/CurrentTask/IPV5/IPV5.AtolicTS/Core/Src/freertos.c
 SourceFiles#1=C:/Users/alekseev/Desktop/CurrentTask/IPV5/IPV5.AtolicTS/Core/Src/stm32f4xx_it.c
@@ -15,6 +14,7 @@ SourceFiles#2=C:/Users/alekseev/Desktop/CurrentTask/IPV5/IPV5.AtolicTS/Core/Src/
 SourceFiles#3=C:/Users/alekseev/Desktop/CurrentTask/IPV5/IPV5.AtolicTS/Core/Src/main.c
 SourceFolderListSize=1
 SourcePath#0=C:/Users/alekseev/Desktop/CurrentTask/IPV5/IPV5.AtolicTS/Core/Src
+HeaderFiles=;
 SourceFiles=;
 
 [PreviousLibFiles]

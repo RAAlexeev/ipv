@@ -6,7 +6,7 @@
 extern osSemaphoreId myCountingSemBUT1Handle, myCountingSem_S01Handle, myCountingSem_S02Handle, myCountingSemBUT2Handle, myCountingSemTIM4Handle;
 extern osTimerId myTimerBUT1Handle, myTimerBUT2Handle;
 extern  void my_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc);
-
+extern UART_HandleTypeDef huart1;
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
  {
   
@@ -74,15 +74,16 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
   if ( htim->Instance == TIM4 )osSemaphoreRelease(myCountingSemTIM4Handle);
 }
-
+uint8_t uartBuf[2];
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 {
 
-	extern UART_HandleTypeDef huart1;
+
 	//if(&huart1==huart){ only one huart
 	extern uint8_t mb_buf_in[256];
+	HAL_GPIO_WritePin(U1_DE_GPIO_Port,U1_DE_Pin,GPIO_PIN_RESET);
 
-	  HAL_UART_Receive_DMA(&huart1, (uint8_t*)mb_buf_in , 20);
+//	  HAL_UART_Receive_IT(&huart1, &uartBuf , 2);
   	  HAL_NVIC_EnableIRQ(TIM4_IRQn);
 	//}
 }
@@ -90,7 +91,9 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-  HAL_NVIC_DisableIRQ(TIM4_IRQn); 
+//	HAL_GPIO_WritePin(U1_DE_GPIO_Port,U1_DE_Pin,GPIO_PIN_SET);
+//	HAL_UART_Transmit_IT( &huart1,&uartBuf,2 );
+HAL_NVIC_DisableIRQ(TIM4_IRQn);
   extern TIM_HandleTypeDef htim4;
   HAL_TIM_Base_Start_IT(&htim4);
 }
