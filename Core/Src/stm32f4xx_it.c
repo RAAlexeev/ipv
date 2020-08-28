@@ -70,6 +70,13 @@
 /* USER CODE BEGIN 0 */
 //extern osSemaphoreId myCountingSem_S01Handle;
 //extern osSemaphoreId myCountingSem_S02Handle;
+void vApplicationStackOverflowHook( TaskHandle_t xTask, signed char *pcTaskName )
+{
+  //  DisableInterrupts(); // Psuedocode only.
+
+// To make sure this function never exits.
+for( ;; );
+}
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/

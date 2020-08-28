@@ -63,7 +63,7 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
  osSemaphoreRelease(myCountingSem_S02Handle);
 }
 //void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef* hadc)
-//{
+//{ADC_DMAConvCplt
  // osSemaphoreRelease(myCountingSem_S01Handle);
 //}
 //void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)

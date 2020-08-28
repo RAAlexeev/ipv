@@ -7,8 +7,9 @@
 
 #include "integrator.hpp"
 #include "cmsis_os.h"
-
+#include <vector>
 #define FILTER
+#undef DEBUG
 
 extern "C"  void my_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
 	SignalChenal::HAL_ADC_ConvCpltCallback(hadc);
@@ -34,11 +35,14 @@ SignalChenal::SignalChenal(){
 }
 void SignalChenal::init()
 {
-	  if ( HAL_OK != HAL_ADC_Start_DMA( &hadc1, (uint32_t *)SignalChenal::getInstance(&hadc1)->buffer, LEN ))
+
+
+	if ( HAL_OK != HAL_ADC_Start_DMA( &hadc1, reinterpret_cast<uint32_t *>(SignalChenal::getInstance(&hadc1)->buffer), LEN ))
 	  {
 	     _Error_Handler(__FILE__, __LINE__);
 	  }
-	  if ( HAL_OK != HAL_ADC_Start_DMA( &hadc2, (uint32_t *)SignalChenal::getInstance(&hadc2)->buffer, LEN ))
+
+	  if ( HAL_OK != HAL_ADC_Start_DMA( &hadc2, reinterpret_cast<uint32_t *>(SignalChenal::getInstance(&hadc2)->buffer), LEN ))
 	  {
 	     _Error_Handler(__FILE__, __LINE__);
 	  }
@@ -54,35 +58,36 @@ void SignalChenal::init()
   printf("%i.%i", intPart, fractPart);
 }*/
 
-extern inline void filter( int16_t  *pSrc, float32_t *pDst, uint32_t blockSize);
+extern inline void filter( float32_t  *pSrc, float32_t *pDst, uint32_t blockSize);
 
 void SignalChenal::calc() {
 #define k (0.99f)
 #define N (16000)
 
 	//uint16_t *srcInt = static_cast<uint16_t *>( _src);
-
-
-	int16_t *src=buffer;
     if(buffer==buffer1){
     	buffer=buffer2;
     }else{
     	buffer=buffer1;
     }
+
+
 	//static  float32_t y=0 ;
 
-	float32_t  sumQ=0;
-
+	float32_t  sumQ=0,sum=0;
+	float *src=buffer;
 #ifdef FILTER
-
-	float32_t * bufOut_f32 = new float32_t[LEN];
+std::vector<float32_t> bufOut_f32(LEN);
+	//float32_t * bufOut_f32 = new float32_t[LEN];
 //for(uint16_t j=0;j < LEN/8 ;j++){
-	 filter(src/*+LEN/8*j*/, bufOut_f32,  LEN);
-#ifdef DEBUG
-	 float32_t  *tstbuf = new float32_t[400];
-#endif
+//taskENTER_CRITICAL();
+	 filter.exec(src/*+LEN/8*j*/, bufOut_f32.data(),  LEN);
+//taskEXIT_CRITICAL();
+
+
 	for(uint16_t i = 0; i < LEN; i++ ){
-			y = bufOut_f32[i] +y*k;
+			y = bufOut_f32[i]*0.668E+40 +y*k;
+			bufOut_f32[i]=y;
 
 #else
 
@@ -93,24 +98,23 @@ void SignalChenal::calc() {
 #ifdef DEBUG
 			if(i<400)tstbuf[i]=y;
 #endif
-		//	printf("%i\n",(int)(sin(M_PI/800*i)*100)/*(srcInt[i]-2043)*/);
-			//ITM_SendChar( 65 );
-			//printf("%i\n",(int)y);
-			sumQ+=y*y;
-//	}
-}
 
-#ifdef FILTER
-		delete[] bufOut_f32;
-#endif
+			sum +=y;
+			sumQ +=y*y;
+
+
+}
+	const float32_t d = sum/LEN;
+
 		//static uint8_t n = N/fftLenReal;
 		//if(n==0){
 		float32_t v;
-		arm_sqrt_f32( sumQ/LEN, &v );
-		(void)sumQ;
-		velocity_.put(v);
+		if(ARM_MATH_SUCCESS == arm_sqrt_f32( (sumQ-sum*sum/LEN)/LEN, &v )){
 
-		(void)v;
+
+			velocity_.put(v);
+		}
+
 #ifdef DEBUG
 		delete[] tstbuf;
 			char out[30];

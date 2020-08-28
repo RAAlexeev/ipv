@@ -160,14 +160,15 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* hadc)
     hdma_adc1.Init.Direction = DMA_PERIPH_TO_MEMORY;
     hdma_adc1.Init.PeriphInc = DMA_PINC_DISABLE;
     hdma_adc1.Init.MemInc = DMA_MINC_ENABLE;
-    hdma_adc1.Init.PeriphDataAlignment = DMA_PDATAALIGN_HALFWORD;
-    hdma_adc1.Init.MemDataAlignment = DMA_MDATAALIGN_HALFWORD;
+    hdma_adc1.Init.PeriphDataAlignment = DMA_PDATAALIGN_WORD;
+    hdma_adc1.Init.MemDataAlignment = DMA_MDATAALIGN_WORD;
     hdma_adc1.Init.Mode = DMA_NORMAL;
     hdma_adc1.Init.Priority = DMA_PRIORITY_MEDIUM;
-    hdma_adc1.Init.FIFOMode = DMA_FIFOMODE_ENABLE;
+    hdma_adc1.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
     hdma_adc1.Init.FIFOThreshold = DMA_FIFO_THRESHOLD_FULL;
-    hdma_adc1.Init.MemBurst = DMA_MBURST_INC4;
+    hdma_adc1.Init.MemBurst = DMA_MBURST_SINGLE;
     hdma_adc1.Init.PeriphBurst = DMA_PBURST_SINGLE;
+   // hdma_adc1.XferCpltCallback =
     if (HAL_DMA_Init(&hdma_adc1) != HAL_OK)
     {
     	 _Error_Handler(__FILE__, __LINE__);
@@ -203,8 +204,8 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* hadc)
     hdma_adc2.Init.Direction = DMA_PERIPH_TO_MEMORY;
     hdma_adc2.Init.PeriphInc = DMA_PINC_DISABLE;
     hdma_adc2.Init.MemInc = DMA_MINC_ENABLE;
-    hdma_adc2.Init.PeriphDataAlignment = DMA_PDATAALIGN_HALFWORD;
-    hdma_adc2.Init.MemDataAlignment = DMA_MDATAALIGN_HALFWORD;
+    hdma_adc2.Init.PeriphDataAlignment = DMA_MDATAALIGN_HALFWORD;
+    hdma_adc2.Init.MemDataAlignment = DMA_MDATAALIGN_WORD;
     hdma_adc2.Init.Mode = DMA_NORMAL;
     hdma_adc2.Init.Priority = DMA_PRIORITY_MEDIUM;
     hdma_adc2.Init.FIFOMode = DMA_FIFOMODE_ENABLE;

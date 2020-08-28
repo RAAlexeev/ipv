@@ -80,7 +80,7 @@ PCD_HandleTypeDef hpcd_USB_OTG_FS;
 WWDG_HandleTypeDef hwwdg;
 
 osThreadId defaultTaskHandle;
-uint32_t defaultTaskBuffer[ 128 ];
+uint32_t defaultTaskBuffer[ 256 ];
 osStaticThreadDef_t defaultTaskControlBlock;
 osThreadId myTask_S1Handle;
 uint32_t myTask_S1Buffer[ 500 ];
@@ -209,18 +209,20 @@ int main(void)
   HAL_GPIO_WritePin(RELAY_1_GPIO_Port, RELAY_1_Pin, GPIO_PIN_SET);
   SignalChenal::init();
 
-//while(1)
 
 	setCoef(1,0x0);
-	setCoef(1,0x100);
-	setCoef(1,0x200);
+
+//	setCoef(1,0x100);
+//	setCoef(1,0x200);
 	//  HAL_TIM_Base_Start(&htim3);
 
 	uint8_t uartBuf;
 
 //	 uint8_t  *buf =(uint8_t*)"qqqqqqqqqqqqqqqqqqq";
 //	HAL_UART_Transmit( &huart1,buf,10,100 );
-while(1){
+
+/*
+
 	PWM(0,0,20);
 	PWM(5,0,20);
 	PWM(10,0,20);
@@ -232,7 +234,7 @@ while(1){
     	HAL_UART_Transmit( &huart1,&uartBuf,1,100 );
 
     };
-}
+*/
   /* USER CODE END 2 */
 
   /* Create the mutex(es) */
@@ -292,8 +294,8 @@ while(1){
 
   /* Create the thread(s) */
   /* definition and creation of defaultTask */
-  osThreadStaticDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 128, defaultTaskBuffer, &defaultTaskControlBlock);
-  defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
+  osThreadStaticDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 256, defaultTaskBuffer, &defaultTaskControlBlock);
+ // defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
   /* definition and creation of myTask_S1 */
   osThreadStaticDef(myTask_S1, StartTask_S1, osPriorityAboveNormal, 0, 500, myTask_S1Buffer, &myTask_S1ControlBlock);
@@ -301,7 +303,7 @@ while(1){
 
   /* definition and creation of myTask_S2 */
   osThreadStaticDef(myTask_S2, StartTask_S2, osPriorityAboveNormal, 0, 500, myTask_S2Buffer, &myTask_S2ControlBlock);
-  myTask_S2Handle = osThreadCreate(osThread(myTask_S2), NULL);
+//  myTask_S2Handle = osThreadCreate(osThread(myTask_S2), NULL);
 
   /* definition and creation of myTaskModbus */
 //  osThreadStaticDef(myTaskModbus, StartTaskModbus, osPriorityBelowNormal, 0, 128, myTaskModbusBuffer, &myTaskModbusControlBlock);
@@ -411,7 +413,7 @@ static void MX_ADC1_Init(void)
   hadc1.Init.DiscontinuousConvMode = DISABLE;
   hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_RISING;
   hadc1.Init.ExternalTrigConv = ADC_EXTERNALTRIGCONV_T2_TRGO;
-  hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
+  hadc1.Init.DataAlign = ADC_DATAALIGN_LEFT;
   hadc1.Init.NbrOfConversion = 1;
   hadc1.Init.DMAContinuousRequests = ENABLE;
   hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
@@ -1131,7 +1133,7 @@ void PWM(float velocity, float min, float max)
 
   uint16_t dutyCycle = (uint16_t)(velocity*(0x9FFF)/(max-min));
 //	uint16_t dutyCycle= 0x00FF;
-  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, dutyCycle);
+  __HAL_TIM_SET_COMPARE( &htim3, TIM_CHANNEL_1, dutyCycle );
 
 }
 
@@ -1168,59 +1170,84 @@ void setCoef( uint8_t CHn , uint16_t Coef )
      port = SS_3_GPIO_Port;
      break;
   }
-  uint16_t data;
+  uint16_t txData,rxData;
 //for(;;)
 {
-  HAL_GPIO_WritePin(port, pin, GPIO_PIN_SET);
 
-  data= 0x1803;
-   byteOrder::reverse(data);
+// while(1){//byteOrder::reverse(data);
+
+  HAL_GPIO_WritePin(port, pin, GPIO_PIN_SET);
+ // for(;;){
+	  HAL_Delay(1);
+  txData= 0x1803;
+
   HAL_GPIO_WritePin(port, pin, GPIO_PIN_RESET);
-  if ( HAL_OK != HAL_SPI_Transmit( &hspi1, (uint8_t *)&data, 1 , 200) )
+  if ( HAL_OK != HAL_SPI_Transmit( &hspi1, (uint8_t *)&txData, 1 , 200) )
   {
      _Error_Handler(__FILE__, __LINE__);
   }
 
    HAL_GPIO_WritePin(port, pin, GPIO_PIN_SET);
 
-   data = (1 << 10) | ( Coef&0xFFC  );
-   byteOrder::reverse(data);
-   HAL_Delay(5);
+   txData = (1 << 10) | ( Coef&0xFFC  );
+   Coef =~Coef;
+   HAL_Delay(1);
+
    HAL_GPIO_WritePin(port, pin, GPIO_PIN_RESET);
 
-	  if ( HAL_OK != HAL_SPI_Transmit( &hspi1, (uint8_t *)&data, 1 , 200) )
+	  if ( HAL_OK != HAL_SPI_Transmit( &hspi1, (uint8_t *)&txData, 1 , 200) )
 	  {
 		 _Error_Handler(__FILE__, __LINE__);
 	  }
    HAL_GPIO_WritePin(port, pin, GPIO_PIN_SET);
-   data=0x0800 ;
-   byteOrder::reverse(data);
-   HAL_Delay(5);
+//   }
+ //  for(;;){
+	   txData=0x0800 ;
+
+   HAL_Delay(1);
 		  HAL_GPIO_WritePin(port, pin, GPIO_PIN_RESET);
 
-  if ( HAL_OK != HAL_SPI_Transmit( &hspi1, (uint8_t *)&data, 1 , 200) )
+		  if ( HAL_OK != HAL_SPI_TransmitReceive( &hspi1, (uint8_t *)&txData,(uint8_t *)&rxData, 1 , 200) )
 		  {
 			 _Error_Handler(__FILE__, __LINE__);
-		  }		  HAL_GPIO_WritePin(port, pin, GPIO_PIN_SET);
-  HAL_Delay(5);
-   data= 0x1C00;
-    byteOrder::reverse( data );
+		  }
+
+
+		   //  HAL_GPIO_WritePin(port, pin, GPIO_PIN_SET);
+		  	  HAL_GPIO_WritePin(port, pin, GPIO_PIN_SET);
+  // }
+   txData=0x0C00;
+
+  HAL_Delay(1);
+		  HAL_GPIO_WritePin(port, pin, GPIO_PIN_RESET);
+
+		  if ( HAL_OK != HAL_SPI_Transmit( &hspi1, (uint8_t *)&txData, 1 , 200) )
+		  {
+			 _Error_Handler(__FILE__, __LINE__);
+		  }
+ HAL_GPIO_WritePin(port, pin, GPIO_PIN_SET);
+ HAL_Delay(1);
+ txData= 0x1C00;
+    //byteOrder::reverse( data );
    HAL_GPIO_WritePin(port, pin, GPIO_PIN_RESET);
-   if ( HAL_OK != HAL_SPI_Transmit( &hspi1, (uint8_t *)&data, 1 , 200) )
+   if ( HAL_OK != HAL_SPI_Transmit( &hspi1, (uint8_t *)&txData, 1 , 200) )
    {
       _Error_Handler(__FILE__, __LINE__);
    }
 
     HAL_GPIO_WritePin(port, pin, GPIO_PIN_SET);
-    HAL_Delay(5);
-    data= 0x0;
-     byteOrder::reverse(data);
+    HAL_Delay(1);
+    txData= 0x0;
+    // byteOrder::reverse(data);
     HAL_GPIO_WritePin(port, pin, GPIO_PIN_RESET);
-    if ( HAL_OK != HAL_SPI_Transmit( &hspi1, (uint8_t *)&data, 1 , 200) )
+    if ( HAL_OK != HAL_SPI_Transmit( &hspi1, (uint8_t *)&txData, 1 , 200) )
     {
        _Error_Handler(__FILE__, __LINE__);
     }
-
+    HAL_GPIO_WritePin(port, pin, GPIO_PIN_RESET);
+     if ( HAL_OK !=  HAL_SPI_Receive(&hspi1, (uint8_t *)&rxData, 1 , 200))    {
+         _Error_Handler(__FILE__, __LINE__);
+      };
      HAL_GPIO_WritePin(port, pin, GPIO_PIN_SET);
 }
   
@@ -1308,17 +1335,33 @@ const uint32_t BaudRate[] = {115200, 4800, 9600, 19200, 38400, 57600, 115200};
   * @param  argument: Not used 
   * @retval None
   */
+//uint32_t	runCnt = 0;
+
 /* USER CODE END Header_StartDefaultTask */
+
+
 void StartDefaultTask(void const * argument)
 {
 
   /* USER CODE BEGIN 5 */
 
+		char out[10];
+
    //menuInit();
   /* Infinite loop */
   for(;;)
   {
-    
+		float32_t velocity=SignalChenal::getInstance(&hadc1)->getVelocity();
+		int32_t velocityInt = static_cast<int32_t>(velocity);
+
+		static unsigned  char ch='\r';
+
+		//if( ch=='\0' ) ch='\n'; else ch='\0';
+		uint8_t end=sprintf(out,"%i,%i;",(int)velocityInt,(int)((velocity-velocityInt)*100));
+		out[end] = ch;
+		out[end+1] = 0;
+	myUtils::ITM_SendStr(out);
+   // runCnt++;
     if( GPIO_PIN_SET ==  HAL_GPIO_ReadPin(SENS1_FAIL_GPIO_Port, SENS1_FAIL_Pin ) )
     {
       CH[0].error = eFAIL;
@@ -1334,6 +1377,7 @@ void StartDefaultTask(void const * argument)
       CH[1].error = eOK;
          
     //display();
+    osDelay(1);
   }
   
   /* USER CODE END 5 */ 
@@ -1372,7 +1416,7 @@ void StartTask_S1(void const * argument)
    // if(mainMenu.CHn == 0) 
    //   PWM(&CH[0].velocity, mainMenu.items[0][iVmin].param/10.f, mainMenu.items[0][iVmax].param/10.f);
     
-    uint8_t tOut = 10; 
+    //uint8_t tOut = 10;
     
    // testMaxVelocity(&CH[0].velocity, &tOut, mainMenu.items[0][iVrly].param/10.f, RELAY_1_GPIO_Port, RELAY_1_Pin );
     
