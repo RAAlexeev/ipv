@@ -3,7 +3,7 @@ Modbus slave implementation for STM32 HAL under FreeRTOS.
 (c) 2017 Viacheslav Kaloshin, multik@multik.org
 Licensed under LGPL. 
 */
-#include "menu.hpp"
+
 #include "FreeRTOS.h"
 #include "cmsis_os.h"
 #include "modbus.h"
@@ -80,11 +80,11 @@ void ModBus_Init(void)
 void  read_reg_callback(uint16_t reg)
 {
   
-  extern  CH_t CH[2];
+
   switch ( reg )
   {
   case 9: //update
-    mb_reg[reg] =  (uint8_t)CH[0].velocity*10  |   (uint8_t)CH[1].velocity*10 << 8;
+ //   mb_reg[reg] =  (uint8_t)CH[0].velocity*10  |   (uint8_t)CH[1].velocity*10 << 8;
     break;  
   }
   
@@ -163,10 +163,10 @@ int ModBusParse(uint8_t in_count)
         }
         if( mb_addr >= 2 && mb_addr < 10 ) 
         {
-          mainMenu.items[0][mb_addr].param = ModBus_GetRegister( mb_addr ) & 0x00FF;
-          mainMenu.items[0][mb_addr].fSaveParam(&mainMenu.items[0][mb_addr]);
-          mainMenu.items[1][mb_addr].param =  ModBus_GetRegister( mb_addr ) >> 8;
-          mainMenu.items[1][mb_addr].fSaveParam(&mainMenu.items[1][mb_addr]);
+        //  mainMenu.items[0][mb_addr].param = ModBus_GetRegister( mb_addr ) & 0x00FF;
+        //  mainMenu.items[0][mb_addr].fSaveParam(&mainMenu.items[0][mb_addr]);
+         // mainMenu.items[1][mb_addr].param =  ModBus_GetRegister( mb_addr ) >> 8;
+         /// mainMenu.items[1][mb_addr].fSaveParam(&mainMenu.items[1][mb_addr]);
         }
         mb_buf_out[mb_buf_out_count++]=mb_addr;
         mb_buf_out[mb_buf_out_count++]=func;

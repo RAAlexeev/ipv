@@ -87,7 +87,7 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 void _Error_Handler(const char *f,const uint16_t line);
 
 /* USER CODE BEGIN EFP */
-
+#define Error_Handler()_Error_Handler(__FILE__,__LINE__);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
@@ -109,10 +109,10 @@ void _Error_Handler(const char *f,const uint16_t line);
 #define BUT2_GPIO_Port GPIOA
 #define BUT1_Pin GPIO_PIN_10
 #define BUT1_GPIO_Port GPIOC
-#define HG_1_Pin GPIO_PIN_11
-#define HG_1_GPIO_Port GPIOC
-#define HG_2_Pin GPIO_PIN_12
-#define HG_2_GPIO_Port GPIOC
+#define HG_1_Pin GPIO_PIN_8
+#define HG_1_GPIO_Port GPIOD
+#define HG_2_Pin GPIO_PIN_9
+#define HG_2_GPIO_Port GPIOD
 #define A_Pin GPIO_PIN_0
 #define A_GPIO_Port GPIOD
 #define B_Pin GPIO_PIN_1

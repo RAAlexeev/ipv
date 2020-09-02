@@ -27,7 +27,7 @@ namespace byteOrder {
 }
 
 namespace myUtils{
-	inline void ITM_SendStr( char *s ){
+	inline void ITM_SendStr(const  char *s ){
 		while(*s){
 		ITM_SendChar(*s++ );
 		}

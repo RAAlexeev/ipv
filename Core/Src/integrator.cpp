@@ -4,13 +4,13 @@
 #include "buffer.hpp"
 #include "myUtils.hpp"
 #include "stm32f4xx.h"
-
+#include "SC39-11driver.h"
 #include "integrator.hpp"
 #include "cmsis_os.h"
 #include <vector>
 #define FILTER
 #undef DEBUG
-
+#define _DEBUG(x) x
 extern "C"  void my_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
 	SignalChenal::HAL_ADC_ConvCpltCallback(hadc);
 }
@@ -21,13 +21,10 @@ extern ADC_HandleTypeDef hadc2;
 
 void SignalChenal::HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
 
-	  osSemaphoreRelease((hadc->Instance == ADC1)?myCountingSem_S01Handle:myCountingSem_S02Handle);
+	  osSemaphoreRelease((hadc == &hadc1)?myCountingSem_S01Handle:myCountingSem_S02Handle);
 
-	    if ( HAL_OK != HAL_ADC_Start_DMA( hadc, (uint32_t *)(getInstance(hadc)->buffer), LEN ))
-	      {
-	         _Error_Handler(__FILE__, __LINE__);
-	      }
-
+	//	_DEBUG(myUtils::ITM_SendStr(( char*)((hadc->Instance == ADC1)?"\nS1":"\nS2")));
+	//	_DEBUG(myUtils::ITM_SendStr(( char*)((getInstance(hadc)->buffer==getInstance(hadc)->buffer1)?"-1\n":"-2\n")));
 }
 
 SignalChenal::SignalChenal(){
@@ -59,23 +56,31 @@ void SignalChenal::init()
 }*/
 
 extern inline void filter( float32_t  *pSrc, float32_t *pDst, uint32_t blockSize);
+void * SignalChenal::swBuffer(){
 
+    return buffer=(buffer==buffer2)?buffer1:buffer2;
+}
 void SignalChenal::calc() {
 #define k (0.99f)
 #define N (16000)
-
+//	_DEBUG(myUtils::ITM_SendStr(getInstance(&hadc1)==this?"1":"2"));
 	//uint16_t *srcInt = static_cast<uint16_t *>( _src);
-    if(buffer==buffer1){
-    	buffer=buffer2;
-    }else{
-    	buffer=buffer1;
-    }
+
+	float *src=buffer;
+
+    if ( HAL_OK != HAL_ADC_Start_DMA( &instances[0]==this?&hadc1:&hadc2, (uint32_t *)(swBuffer()), LEN ))
+      {
+         _Error_Handler(__FILE__, __LINE__);
+      }
+
+
+
 
 
 	//static  float32_t y=0 ;
 
 	float32_t  sumQ=0,sum=0;
-	float *src=buffer;
+
 #ifdef FILTER
 std::vector<float32_t> bufOut_f32(LEN);
 	//float32_t * bufOut_f32 = new float32_t[LEN];
@@ -109,14 +114,23 @@ std::vector<float32_t> bufOut_f32(LEN);
 		//static uint8_t n = N/fftLenReal;
 		//if(n==0){
 		float32_t v;
+
 		if(ARM_MATH_SUCCESS == arm_sqrt_f32( (sumQ-sum*sum/LEN)/LEN, &v )){
 
 
-			velocity_.put(v);
+			velocity_.put( v );
 		}
 
+
+
+
+		uint16_t c =  uxSemaphoreGetCount((getInstance(&hadc1)==this)?myCountingSem_S01Handle:myCountingSem_S02Handle);
+		c+=0x30;
+
+		_DEBUG(myUtils::ITM_SendStr(( char*)( &c )));
+
 #ifdef DEBUG
-		delete[] tstbuf;
+
 			char out[30];
 
 			int32_t velocityInt = static_cast<int32_t>(getVelocity());

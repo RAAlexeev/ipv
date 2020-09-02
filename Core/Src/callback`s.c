@@ -1,4 +1,4 @@
-#include <menu.hpp>
+
 #include "main.h"
 #include "stm32f4xx_hal.h"
 #include "cmsis_os.h"
@@ -7,6 +7,7 @@ extern osSemaphoreId myCountingSemBUT1Handle, myCountingSem_S01Handle, myCountin
 extern osTimerId myTimerBUT1Handle, myTimerBUT2Handle;
 extern  void my_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc);
 extern UART_HandleTypeDef huart1;
+
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
  {
   
@@ -16,14 +17,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
         if ( GPIO_PIN_SET == HAL_GPIO_ReadPin( BUT1_GPIO_Port, BUT1_Pin ) )
          {
               
-             if ( mainMenu.active ) 
-                osTimerStart(myTimerBUT1Handle, 100 );
-              else
-              {
-                osTimerStart(myTimerBUT1Handle, 1000 );
-                mainMenu.CHsw = 1;
-                mainMenu.CHn = !mainMenu.CHn;
-              }
+               osTimerStart(myTimerBUT1Handle, 1000 );
 
          } else osTimerStop( myTimerBUT1Handle );
           

@@ -22,6 +22,7 @@
 #include "EEPROM.h"
 #include "integrator.hpp"
 #include "myUtils.hpp"
+#include "SC39-11driver.h"
 /* USER CODE END Includes */
 
 
@@ -70,6 +71,8 @@ TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim4;
+TIM_HandleTypeDef htim8;
+DMA_HandleTypeDef hdma_tim8_up;
 
 UART_HandleTypeDef huart1;
 DMA_HandleTypeDef hdma_usart1_rx;
@@ -129,6 +132,7 @@ static void MX_RTC_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_TIM1_Init(void);
 static void MX_TIM3_Init(void);
+static void MX_TIM8_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_TIM4_Init(void);
 static void MX_TIM2_Init(void);
@@ -150,7 +154,7 @@ void myTimerCalbakBUT1(void const * argument);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
- CH_t CH[2] = {0};
+
  void _Error_Handler(const char *f, const uint16_t l){
 
  }
@@ -202,6 +206,8 @@ int main(void)
   MX_USART1_UART_Init();
   MX_TIM4_Init();
   MX_TIM2_Init();
+  MX_TIM8_Init();
+
  // MX_USB_OTG_FS_PCD_Init();
  // MX_IWDG_Init();
   //MX_WWDG_Init();
@@ -210,7 +216,7 @@ int main(void)
   SignalChenal::init();
 
 
-	setCoef(1,0x0);
+	//setCoef(1,0x0);
 
 //	setCoef(1,0x100);
 //	setCoef(1,0x200);
@@ -295,7 +301,7 @@ int main(void)
   /* Create the thread(s) */
   /* definition and creation of defaultTask */
   osThreadStaticDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 256, defaultTaskBuffer, &defaultTaskControlBlock);
- // defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
+  defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
   /* definition and creation of myTask_S1 */
   osThreadStaticDef(myTask_S1, StartTask_S1, osPriorityAboveNormal, 0, 500, myTask_S1Buffer, &myTask_S1ControlBlock);
@@ -303,7 +309,7 @@ int main(void)
 
   /* definition and creation of myTask_S2 */
   osThreadStaticDef(myTask_S2, StartTask_S2, osPriorityAboveNormal, 0, 500, myTask_S2Buffer, &myTask_S2ControlBlock);
-//  myTask_S2Handle = osThreadCreate(osThread(myTask_S2), NULL);
+  myTask_S2Handle = osThreadCreate(osThread(myTask_S2), NULL);
 
   /* definition and creation of myTaskModbus */
 //  osThreadStaticDef(myTaskModbus, StartTaskModbus, osPriorityBelowNormal, 0, 128, myTaskModbusBuffer, &myTaskModbusControlBlock);
@@ -716,7 +722,8 @@ static void MX_TIM1_Init(void)
 
   TIM_ClockConfigTypeDef sClockSourceConfig = {0};
   TIM_MasterConfigTypeDef sMasterConfig = {0};
-
+  TIM_OC_InitTypeDef sConfigOC = {0};
+  TIM_BreakDeadTimeConfigTypeDef sBreakDeadTimeConfig = {0};
   /* USER CODE BEGIN TIM1_Init 1 */
 
   /* USER CODE END TIM1_Init 1 */
@@ -902,7 +909,50 @@ static void MX_TIM4_Init(void)
   /* USER CODE END TIM4_Init 2 */
 
 }
+/**
+  * @brief TIM8 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM8_Init(void)
+{
 
+  /* USER CODE BEGIN TIM8_Init 0 */
+
+  /* USER CODE END TIM8_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM8_Init 1 */
+
+  /* USER CODE END TIM8_Init 1 */
+  htim8.Instance = TIM8;
+  htim8.Init.Prescaler = 42000;
+  htim8.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim8.Init.Period = 30;
+  htim8.Init.ClockDivision = TIM_CLOCKDIVISION_DIV4;
+  htim8.Init.RepetitionCounter = 0;
+  if (HAL_TIM_Base_Init(&htim8) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim8, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_UPDATE;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim8, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM8_Init 2 */
+
+  /* USER CODE END TIM8_Init 2 */
+
+}
 /**
   * @brief USART1 Initialization Function
   * @param None
@@ -1021,6 +1071,9 @@ static void MX_DMA_Init(void)
   /* DMA2_Stream0_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);
+  /* DMA2_Stream1_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Stream1_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Stream1_IRQn);
   /* DMA2_Stream2_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA2_Stream2_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(DMA2_Stream2_IRQn);
@@ -1054,14 +1107,15 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOE_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, RELAY_1_Pin|RELAY_2_Pin|HG_1_Pin|HG_2_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOC, RELAY_1_Pin|RELAY_2_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, SS_Pin|SS_2_Pin|SS_3_Pin|U1_DE_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOD, A_Pin|B_Pin|C_Pin|D_Pin 
-                          |E_Pin|F_Pin|G_Pin|DP_Pin, GPIO_PIN_RESET);
+                          |E_Pin|F_Pin|G_Pin|DP_Pin
+						  |HG_1_Pin|HG_2_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : SENS2_FAIL_Pin SENS1_FAIL_Pin */
   GPIO_InitStruct.Pin = SENS2_FAIL_Pin|SENS1_FAIL_Pin;
@@ -1070,7 +1124,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pins : RELAY_1_Pin RELAY_2_Pin HG_1_Pin HG_2_Pin */
-  GPIO_InitStruct.Pin = RELAY_1_Pin|RELAY_2_Pin|HG_1_Pin|HG_2_Pin;
+  GPIO_InitStruct.Pin = RELAY_1_Pin|RELAY_2_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -1098,7 +1152,7 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pins : A_Pin B_Pin C_Pin D_Pin 
                            E_Pin F_Pin G_Pin DP_Pin */
   GPIO_InitStruct.Pin = A_Pin|B_Pin|C_Pin|D_Pin 
-                          |E_Pin|F_Pin|G_Pin|DP_Pin;
+                          |E_Pin|F_Pin|G_Pin|DP_Pin|HG_1_Pin|HG_2_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -1114,7 +1168,21 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-extern void display();
+void Screen::display(){
+		switch(screen.getCurPos()){
+			case 0:
+				SC39_show(SignalChenal::getInstance(&hadc1)->getVelocity());
+				break;
+			case 1:
+				SC39_show(SignalChenal::getInstance(&hadc2)->getVelocity(), true);
+				break;
+			case 2:
+				//SC39_show(SignalChenal::getInstance(&hadc2)->getVelocity());
+				break;
+			case 3:
+				break;	//SC39_show(SignalChenal::getInstance(&hadc2)->getVelocity(), DOT_ON);
+		}
+	}
 
 void testMaxVelocity(float * velocity,uint8_t * tOut, float max , GPIO_TypeDef * GPIO_port, uint16_t GPIO_pin)
 {
@@ -1344,40 +1412,45 @@ void StartDefaultTask(void const * argument)
 {
 
   /* USER CODE BEGIN 5 */
+	extern uint32_t SC39_IO[2];
+	if(HAL_DMA_Start( &hdma_tim8_up, (uint32_t)&SC39_IO, (uint32_t)&GPIOD->BSRR, 2 ) != HAL_OK)
+	{
+   		    _Error_Handler(__FILE__, __LINE__);
+    };
 
-		char out[10];
 
+		 if( HAL_TIM_Base_Start(&htim8)!= HAL_OK)
+		  {
+		    _Error_Handler(__FILE__, __LINE__);
+		  };
+		  /* Enable the TIM Update DMA request */
+		  __HAL_TIM_ENABLE_DMA(&htim8, TIM_DMA_UPDATE);
+		  SC39_show(0);
+		  //HAL_GPIO_WritePin(HG_1_GPIO_Port,HG_1_Pin,GPIO_PIN_SET);
+		  //HAL_GPIO_WritePin(A_GPIO_Port,A_Pin,GPIO_PIN_SET);
    //menuInit();
   /* Infinite loop */
   for(;;)
   {
-		float32_t velocity=SignalChenal::getInstance(&hadc1)->getVelocity();
-		int32_t velocityInt = static_cast<int32_t>(velocity);
+	//	float32_t velocity=SignalChenal::getInstance(&hadc1)->getVelocity();
+	//	int32_t velocityInt = static_cast<int32_t>(velocity);
 
 		static unsigned  char ch='\r';
 
 		//if( ch=='\0' ) ch='\n'; else ch='\0';
-		uint8_t end=sprintf(out,"%i,%i;",(int)velocityInt,(int)((velocity-velocityInt)*100));
-		out[end] = ch;
-		out[end+1] = 0;
-	myUtils::ITM_SendStr(out);
+	//	uint8_t end=sprintf(out,"%i,%i;",(int)velocityInt,(int)((velocity-velocityInt)*100));
+	//	out[end] = ch;
+	//	out[end+1] = 0;
+//	myUtils::ITM_SendStr(out);
    // runCnt++;
-    if( GPIO_PIN_SET ==  HAL_GPIO_ReadPin(SENS1_FAIL_GPIO_Port, SENS1_FAIL_Pin ) )
-    {
-      CH[0].error = eFAIL;
-    }
-    else
-      CH[0].error = eOK;
-         
-    if( GPIO_PIN_SET ==  HAL_GPIO_ReadPin(SENS2_FAIL_GPIO_Port, SENS2_FAIL_Pin ) )
-    {
-      CH[1].error = eFAIL;
-    }
-    else
-      CH[1].error = eOK;
-         
+
+   // SC39_showDig('8',GPIO_PIN_SET,1);
+
+  //  SC39_showDig('1',GPIO_PIN_SET,2);
+		screen.display();
+    osDelay(10);
     //display();
-    osDelay(1);
+
   }
   
   /* USER CODE END 5 */ 
@@ -1505,31 +1578,22 @@ void StartTaskModbus(void const * argument)
   /* USER CODE END StartTaskModbus */
 }
 
+
 /* myTimeCallbackBUT2 function */
 void myTimeCallbackBUT2(void const * argument)
 {
   /* USER CODE BEGIN myTimeCallbackBUT2 */
-  
-  if ( mainMenu.active ) 
-  {
-    if (!mainMenu.edit)
-    {
-      mainMenu.edit =  1;
-      return;
-    }
-  }
-  else
-    if(!(mainMenu.mode < MODES ))
-    {
-      mainMenu.mode = DEFAULTmode;
-    } else mainMenu.mode=static_cast<Mode>(static_cast<int>(mainMenu.mode)+1);
-  
-  if( mainMenu.edit &&  ++mainMenu.item()->param > 99 )
-  {  
-    mainMenu.item()->param = 0; 
-   
-  }else 
-     osTimerStart(myTimerBUT1Handle, 10 );
+	switch(screen.getCurPos()){
+		case 0:
+		case 2: 	screen.moveCurPos(1);
+	break;
+		case 1:
+		case 3: 	screen.moveCurPos(-1);
+	break;
+	}
+
+
+    // osTimerStart(myTimerBUT1Handle, 10 );
   /* USER CODE END myTimeCallbackBUT2 */
 }
 
@@ -1545,16 +1609,7 @@ void myTimerCalbakBUT1(void const * argument)
   * @brief  This function is executed in case of error occurrence.
   * @retval None
   */
-void Error_Handler(void)
-{
-  /* USER CODE BEGIN Error_Handler_Debug */
- // printf( "Error f:%s l:%i",file, line);  
-  /* User can add his own implementation to report the HAL error return state */
-  while(1)
-  {
-  }
-  /* USER CODE END Error_Handler_Debug */
-}
+
 
 #ifdef  USE_FULL_ASSERT
 /**

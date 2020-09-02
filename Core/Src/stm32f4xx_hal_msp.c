@@ -66,6 +66,8 @@ extern DMA_HandleTypeDef hdma_spi1_rx;
 
 extern DMA_HandleTypeDef hdma_spi1_tx;
 
+extern DMA_HandleTypeDef hdma_tim8_up;
+
 extern DMA_HandleTypeDef hdma_usart1_rx;
 
 extern DMA_HandleTypeDef hdma_usart1_tx;
@@ -105,7 +107,7 @@ extern DMA_HandleTypeDef hdma_usart1_tx;
 /* USER CODE END 0 */
                         
 void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
-                    /**
+                                        /**
   * Initializes the Global MSP.
   */
 void HAL_MspInit(void)
@@ -166,12 +168,11 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* hadc)
     hdma_adc1.Init.Priority = DMA_PRIORITY_MEDIUM;
     hdma_adc1.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
     hdma_adc1.Init.FIFOThreshold = DMA_FIFO_THRESHOLD_FULL;
-    hdma_adc1.Init.MemBurst = DMA_MBURST_SINGLE;
+    hdma_adc1.Init.MemBurst = DMA_MBURST_INC16;
     hdma_adc1.Init.PeriphBurst = DMA_PBURST_SINGLE;
-   // hdma_adc1.XferCpltCallback =
     if (HAL_DMA_Init(&hdma_adc1) != HAL_OK)
     {
-    	 _Error_Handler(__FILE__, __LINE__);
+      Error_Handler();
     }
 
     __HAL_LINKDMA(hadc,DMA_Handle,hdma_adc1);
@@ -204,17 +205,17 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* hadc)
     hdma_adc2.Init.Direction = DMA_PERIPH_TO_MEMORY;
     hdma_adc2.Init.PeriphInc = DMA_PINC_DISABLE;
     hdma_adc2.Init.MemInc = DMA_MINC_ENABLE;
-    hdma_adc2.Init.PeriphDataAlignment = DMA_MDATAALIGN_HALFWORD;
+    hdma_adc2.Init.PeriphDataAlignment = DMA_PDATAALIGN_WORD;
     hdma_adc2.Init.MemDataAlignment = DMA_MDATAALIGN_WORD;
     hdma_adc2.Init.Mode = DMA_NORMAL;
     hdma_adc2.Init.Priority = DMA_PRIORITY_MEDIUM;
-    hdma_adc2.Init.FIFOMode = DMA_FIFOMODE_ENABLE;
+    hdma_adc2.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
     hdma_adc2.Init.FIFOThreshold = DMA_FIFO_THRESHOLD_FULL;
-    hdma_adc2.Init.MemBurst = DMA_MBURST_INC4;
+    hdma_adc2.Init.MemBurst = DMA_MBURST_SINGLE;
     hdma_adc2.Init.PeriphBurst = DMA_PBURST_SINGLE;
     if (HAL_DMA_Init(&hdma_adc2) != HAL_OK)
     {
-     _Error_Handler(__FILE__, __LINE__);
+      Error_Handler();
     }
 
     __HAL_LINKDMA(hadc,DMA_Handle,hdma_adc2);
@@ -357,7 +358,7 @@ void HAL_I2C_MspInit(I2C_HandleTypeDef* hi2c)
   
     /* I2C1 DMA Init */
     /* I2C1_TX Init */
-    hdma_i2c1_tx.Instance = DMA1_Stream6;
+    hdma_i2c1_tx.Instance = DMA1_Stream7;
     hdma_i2c1_tx.Init.Channel = DMA_CHANNEL_1;
     hdma_i2c1_tx.Init.Direction = DMA_MEMORY_TO_PERIPH;
     hdma_i2c1_tx.Init.PeriphInc = DMA_PINC_DISABLE;
@@ -369,7 +370,7 @@ void HAL_I2C_MspInit(I2C_HandleTypeDef* hi2c)
     hdma_i2c1_tx.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
     if (HAL_DMA_Init(&hdma_i2c1_tx) != HAL_OK)
     {
-    	 _Error_Handler(__FILE__, __LINE__);
+      Error_Handler();
     }
 
     __HAL_LINKDMA(hi2c,hdmatx,hdma_i2c1_tx);
@@ -387,7 +388,7 @@ void HAL_I2C_MspInit(I2C_HandleTypeDef* hi2c)
     hdma_i2c1_rx.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
     if (HAL_DMA_Init(&hdma_i2c1_rx) != HAL_OK)
     {
-    	 _Error_Handler(__FILE__, __LINE__);
+      Error_Handler();
     }
 
     __HAL_LINKDMA(hi2c,hdmarx,hdma_i2c1_rx);
@@ -575,7 +576,7 @@ void HAL_SPI_MspInit(SPI_HandleTypeDef* hspi)
     hdma_spi1_rx.Init.PeriphBurst = DMA_PBURST_SINGLE;
     if (HAL_DMA_Init(&hdma_spi1_rx) != HAL_OK)
     {
-    	 _Error_Handler(__FILE__, __LINE__);
+      Error_Handler();
     }
 
     __HAL_LINKDMA(hspi,hdmarx,hdma_spi1_rx);
@@ -596,7 +597,7 @@ void HAL_SPI_MspInit(SPI_HandleTypeDef* hspi)
     hdma_spi1_tx.Init.PeriphBurst = DMA_PBURST_SINGLE;
     if (HAL_DMA_Init(&hdma_spi1_tx) != HAL_OK)
     {
-    	 _Error_Handler(__FILE__, __LINE__);
+      Error_Handler();
     }
 
     __HAL_LINKDMA(hspi,hdmatx,hdma_spi1_tx);
@@ -718,6 +719,37 @@ void HAL_TIM_Base_MspInit(TIM_HandleTypeDef* htim_base)
 
   /* USER CODE END TIM4_MspInit 1 */
   }
+  else if(htim_base->Instance==TIM8)
+  {
+  /* USER CODE BEGIN TIM8_MspInit 0 */
+
+  /* USER CODE END TIM8_MspInit 0 */
+    /* Peripheral clock enable */
+    __HAL_RCC_TIM8_CLK_ENABLE();
+  
+    /* TIM8 DMA Init */
+    /* TIM8_UP Init */
+    hdma_tim8_up.Instance = DMA2_Stream1;
+    hdma_tim8_up.Init.Channel = DMA_CHANNEL_7;
+    hdma_tim8_up.Init.Direction = DMA_MEMORY_TO_PERIPH;
+    hdma_tim8_up.Init.PeriphInc = DMA_PINC_DISABLE;
+    hdma_tim8_up.Init.MemInc = DMA_MINC_ENABLE;
+    hdma_tim8_up.Init.PeriphDataAlignment = DMA_PDATAALIGN_WORD;
+    hdma_tim8_up.Init.MemDataAlignment = DMA_MDATAALIGN_WORD;
+    hdma_tim8_up.Init.Mode = DMA_CIRCULAR;
+    hdma_tim8_up.Init.Priority = DMA_PRIORITY_LOW;
+    hdma_tim8_up.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
+    if (HAL_DMA_Init(&hdma_tim8_up) != HAL_OK)
+    {
+      Error_Handler();
+    }
+
+    __HAL_LINKDMA(htim_base,hdma[TIM_DMA_ID_UPDATE],hdma_tim8_up);
+
+  /* USER CODE BEGIN TIM8_MspInit 1 */
+
+  /* USER CODE END TIM8_MspInit 1 */
+  }
 
 }
 
@@ -725,7 +757,27 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef* htim)
 {
 
   GPIO_InitTypeDef GPIO_InitStruct = {0};
-  if(htim->Instance==TIM3)
+  if(htim->Instance==TIM1)
+  {
+  /* USER CODE BEGIN TIM1_MspPostInit 0 */
+
+  /* USER CODE END TIM1_MspPostInit 0 */
+    __HAL_RCC_GPIOE_CLK_ENABLE();
+    /**TIM1 GPIO Configuration    
+    PE9     ------> TIM1_CH1 
+    */
+    GPIO_InitStruct.Pin = GPIO_PIN_9;
+    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    GPIO_InitStruct.Alternate = GPIO_AF1_TIM1;
+    HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
+
+  /* USER CODE BEGIN TIM1_MspPostInit 1 */
+
+  /* USER CODE END TIM1_MspPostInit 1 */
+  }
+  else if(htim->Instance==TIM3)
   {
   /* USER CODE BEGIN TIM3_MspPostInit 0 */
 
@@ -813,6 +865,20 @@ void HAL_TIM_Base_MspDeInit(TIM_HandleTypeDef* htim_base)
 
   /* USER CODE END TIM4_MspDeInit 1 */
   }
+  else if(htim_base->Instance==TIM8)
+  {
+  /* USER CODE BEGIN TIM8_MspDeInit 0 */
+
+  /* USER CODE END TIM8_MspDeInit 0 */
+    /* Peripheral clock disable */
+    __HAL_RCC_TIM8_CLK_DISABLE();
+
+    /* TIM8 DMA DeInit */
+    HAL_DMA_DeInit(htim_base->hdma[TIM_DMA_ID_UPDATE]);
+  /* USER CODE BEGIN TIM8_MspDeInit 1 */
+
+  /* USER CODE END TIM8_MspDeInit 1 */
+  }
 
 }
 
@@ -867,7 +933,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef* huart)
     hdma_usart1_rx.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
     if (HAL_DMA_Init(&hdma_usart1_rx) != HAL_OK)
     {
-    	 _Error_Handler(__FILE__, __LINE__);
+      Error_Handler();
     }
 
     __HAL_LINKDMA(huart,hdmarx,hdma_usart1_rx);
@@ -885,7 +951,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef* huart)
     hdma_usart1_tx.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
     if (HAL_DMA_Init(&hdma_usart1_tx) != HAL_OK)
     {
-    	 _Error_Handler(__FILE__, __LINE__);
+      Error_Handler();
     }
 
     __HAL_LINKDMA(huart,hdmatx,hdma_usart1_tx);
