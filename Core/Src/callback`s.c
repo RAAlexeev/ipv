@@ -17,7 +17,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
         if ( GPIO_PIN_SET == HAL_GPIO_ReadPin( BUT1_GPIO_Port, BUT1_Pin ) )
          {
               
-               osTimerStart(myTimerBUT1Handle, 1000 );
+               osTimerStart(myTimerBUT1Handle, 100 );
 
          } else osTimerStop( myTimerBUT1Handle );
           
@@ -54,7 +54,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 {
  (void)hspi;
- osSemaphoreRelease(myCountingSem_S02Handle);
+
 }
 //void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef* hadc)
 //{ADC_DMAConvCplt

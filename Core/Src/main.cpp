@@ -116,6 +116,7 @@ osStaticSemaphoreDef_t myCountingSemTIM4ControlBlock;
 /* Private variables ---------------------------------------------------------*/
 
  SignalChenal SignalChenal::instances[]={SignalChenal(),SignalChenal()};
+ //Menu menu= Menu({});
  void PWM(float  velocity, float min, float max);
 /* USER CODE END PV */
 
@@ -158,6 +159,7 @@ void myTimerCalbakBUT1(void const * argument);
  void _Error_Handler(const char *f, const uint16_t l){
 
  }
+
  int __io_putchar(int ch){
 	return ITM_SendChar((ch));
  }
@@ -177,8 +179,8 @@ int main(void)
 
   /* MCU Configuration--------------------------------------------------------*/
 
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
- HAL_Init();
+  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */;
+  HAL_Init();
 
   /* USER CODE BEGIN Init */
 
@@ -305,11 +307,11 @@ int main(void)
 
   /* definition and creation of myTask_S1 */
   osThreadStaticDef(myTask_S1, StartTask_S1, osPriorityAboveNormal, 0, 500, myTask_S1Buffer, &myTask_S1ControlBlock);
-  myTask_S1Handle = osThreadCreate(osThread(myTask_S1), NULL);
+//  myTask_S1Handle = osThreadCreate(osThread(myTask_S1), NULL);
 
   /* definition and creation of myTask_S2 */
   osThreadStaticDef(myTask_S2, StartTask_S2, osPriorityAboveNormal, 0, 500, myTask_S2Buffer, &myTask_S2ControlBlock);
-  myTask_S2Handle = osThreadCreate(osThread(myTask_S2), NULL);
+ // myTask_S2Handle = osThreadCreate(osThread(myTask_S2), NULL);
 
   /* definition and creation of myTaskModbus */
 //  osThreadStaticDef(myTaskModbus, StartTaskModbus, osPriorityBelowNormal, 0, 128, myTaskModbusBuffer, &myTaskModbusControlBlock);
@@ -930,7 +932,7 @@ static void MX_TIM8_Init(void)
   htim8.Instance = TIM8;
   htim8.Init.Prescaler = 42000;
   htim8.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim8.Init.Period = 30;
+  htim8.Init.Period = 40;
   htim8.Init.ClockDivision = TIM_CLOCKDIVISION_DIV4;
   htim8.Init.RepetitionCounter = 0;
   if (HAL_TIM_Base_Init(&htim8) != HAL_OK)
@@ -1164,7 +1166,9 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(U1_DE_GPIO_Port, &GPIO_InitStruct);
-
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 }
 
 /* USER CODE BEGIN 4 */
@@ -1174,13 +1178,14 @@ void Screen::display(){
 				SC39_show(SignalChenal::getInstance(&hadc1)->getVelocity());
 				break;
 			case 1:
-				SC39_show(SignalChenal::getInstance(&hadc2)->getVelocity(), true);
+				SC39_show( SignalChenal::getInstance(&hadc2)->getVelocity(), true );
 				break;
 			case 2:
-				//SC39_show(SignalChenal::getInstance(&hadc2)->getVelocity());
+				SC39_show( SignalChenal::getInstance(&hadc1)->getAccelerarion() );
 				break;
 			case 3:
-				break;	//SC39_show(SignalChenal::getInstance(&hadc2)->getVelocity(), DOT_ON);
+				SC39_show( SignalChenal::getInstance(&hadc2)->getAccelerarion(), true );
+				break;
 		}
 	}
 
@@ -1417,14 +1422,14 @@ void StartDefaultTask(void const * argument)
 	{
    		    _Error_Handler(__FILE__, __LINE__);
     };
-
+	  __HAL_TIM_ENABLE_DMA(&htim8, TIM_DMA_UPDATE);
 
 		 if( HAL_TIM_Base_Start(&htim8)!= HAL_OK)
 		  {
 		    _Error_Handler(__FILE__, __LINE__);
 		  };
 		  /* Enable the TIM Update DMA request */
-		  __HAL_TIM_ENABLE_DMA(&htim8, TIM_DMA_UPDATE);
+
 		  SC39_show(0);
 		  //HAL_GPIO_WritePin(HG_1_GPIO_Port,HG_1_Pin,GPIO_PIN_SET);
 		  //HAL_GPIO_WritePin(A_GPIO_Port,A_Pin,GPIO_PIN_SET);
@@ -1582,7 +1587,9 @@ void StartTaskModbus(void const * argument)
 /* myTimeCallbackBUT2 function */
 void myTimeCallbackBUT2(void const * argument)
 {
+
   /* USER CODE BEGIN myTimeCallbackBUT2 */
+	osTimerStop(myTimerBUT2Handle);
 	switch(screen.getCurPos()){
 		case 0:
 		case 2: 	screen.moveCurPos(1);
@@ -1600,8 +1607,17 @@ void myTimeCallbackBUT2(void const * argument)
 /* myTimerCalbakBUT1 function */
 void myTimerCalbakBUT1(void const * argument)
 {
-  /* USER CODE BEGIN myTimerCalbakBUT1 */
-  
+
+	/* USER CODE BEGIN myTimerCalbakBUT1 */
+	osTimerStop(myTimerBUT1Handle);
+	switch(screen.getCurPos()){
+		case 0:
+		case 1: 	screen.moveCurPos(2);
+	break;
+		case 2:
+		case 3: 	screen.moveCurPos(-2);
+	break;
+	}
   /* USER CODE END myTimerCalbakBUT1 */
 }
 

@@ -7,10 +7,10 @@
 #include "SC39-11driver.h"
 #include "integrator.hpp"
 #include "cmsis_os.h"
-#include <vector>
+#include <array>
 #define FILTER
 #undef DEBUG
-#define _DEBUG(x) x
+#define _DEBUG(x)// x
 extern "C"  void my_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
 	SignalChenal::HAL_ADC_ConvCpltCallback(hadc);
 }
@@ -56,12 +56,14 @@ void SignalChenal::init()
 }*/
 
 extern inline void filter( float32_t  *pSrc, float32_t *pDst, uint32_t blockSize);
+
 void * SignalChenal::swBuffer(){
 
     return buffer=(buffer==buffer2)?buffer1:buffer2;
 }
+
 void SignalChenal::calc() {
-#define k (0.99f)
+#define k (0.999f)
 #define N (16000)
 //	_DEBUG(myUtils::ITM_SendStr(getInstance(&hadc1)==this?"1":"2"));
 	//uint16_t *srcInt = static_cast<uint16_t *>( _src);
@@ -79,73 +81,58 @@ void SignalChenal::calc() {
 
 	//static  float32_t y=0 ;
 
-	float32_t  sumQ=0,sum=0;
+	struct{
+		float32_t  sumQ=0,sum=0,res;
+	}V;
 
-#ifdef FILTER
-std::vector<float32_t> bufOut_f32(LEN);
-	//float32_t * bufOut_f32 = new float32_t[LEN];
-//for(uint16_t j=0;j < LEN/8 ;j++){
-//taskENTER_CRITICAL();
-	 filter.exec(src/*+LEN/8*j*/, bufOut_f32.data(),  LEN);
+	struct{
+		float32_t  sumQ=0,sum=0,res;
+	}A;
+
+	float32_t *bufOut_f32 = new float32_t[LEN];
+while(bufOut_f32==NULL){
+	;
+}
+	//for(uint16_t j=0;j < LEN/8 ;j++){
+	//taskENTER_CRITICAL();
+	 filter.exec(src/*+LEN/8*j*/, bufOut_f32,  LEN);
 //taskEXIT_CRITICAL();
 
+	 float32_t a;
 
 	for(uint16_t i = 0; i < LEN; i++ ){
-			y = bufOut_f32[i]*0.668E+40 +y*k;
-			bufOut_f32[i]=y;
-
-#else
-
-	for(uint16_t i = 0; i < LEN; i++ ){
-		y = src[i]-aver/*sin(M_PI/100*i)*/+y*k;
-#endif
-
-#ifdef DEBUG
-			if(i<400)tstbuf[i]=y;
-#endif
-
-			sum +=y;
-			sumQ +=y*y;
+			a = bufOut_f32[i] * 9.82E+040;//0.668E+40;
+			y = a + y*k;
 
 
-}
-	const float32_t d = sum/LEN;
+			A.sum += a;
+ 		    A.sumQ += a*a;
 
-		//static uint8_t n = N/fftLenReal;
-		//if(n==0){
-		float32_t v;
+			V.sum += y;
+			V.sumQ += y*y;
 
-		if(ARM_MATH_SUCCESS == arm_sqrt_f32( (sumQ-sum*sum/LEN)/LEN, &v )){
+			//bufOut_f32[i]=y;
+	}
+
+	delete[] bufOut_f32;
+	if(ARM_MATH_SUCCESS == arm_sqrt_f32( ( A.sumQ*LEN - A.sum*A.sum )/(LEN*LEN), &A.res ) ){
+		acceleration_.put( A.res );
+	}
 
 
-			velocity_.put( v );
-		}
+	if(ARM_MATH_SUCCESS == arm_sqrt_f32( ( V.sumQ*LEN - V.sum*V.sum )/(LEN*LEN), &V.res ) ){
+		velocity_.put( V.res*0.0659 );
+	}
 
 
 
 
-		uint16_t c =  uxSemaphoreGetCount((getInstance(&hadc1)==this)?myCountingSem_S01Handle:myCountingSem_S02Handle);
-		c+=0x30;
+		_DEBUG(uint16_t c =  uxSemaphoreGetCount((getInstance(&hadc1)==this)?myCountingSem_S01Handle:myCountingSem_S02Handle));
+		_DEBUG(c+=0x30);
 
 		_DEBUG(myUtils::ITM_SendStr(( char*)( &c )));
 
-#ifdef DEBUG
 
-			char out[30];
-
-			int32_t velocityInt = static_cast<int32_t>(getVelocity());
-
-			static unsigned  char ch='\n';
-
-			if( ch=='\0' ) ch='\n'; else ch='\0';
-			uint8_t end=sprintf(out,"%i,%i;",(int)velocityInt,(int)((getVelocity()-velocityInt)*100));
-			out[end] = ch;
-			out[end+1] = 0;
-		myUtils::ITM_SendStr(out);
-#endif
-		//s=0;
-		//n=N/fftLenReal;
-		//}else --n;
 
 
 

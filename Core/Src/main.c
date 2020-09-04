@@ -167,7 +167,7 @@ void StartDefaultTask(void const * argument);
 void StartTask_S1(void const * argument);
 void StartTask_S2(void const * argument);
 void StartTaskModbus(void const * argument);
-void myTimeCallbackBUT2(void const * argument);
+void myTimerCallbackBUT2(void const * argument);
 void myTimerCalbakBUT1(void const * argument);
 
 /* USER CODE BEGIN PFP */
@@ -268,7 +268,7 @@ int main(void)
 
   /* Create the timer(s) */
   /* definition and creation of myTimerBUT2 */
-  osTimerStaticDef(myTimerBUT2, myTimeCallbackBUT2, &myTimerBUT2ControlBlock);
+  osTimerStaticDef(myTimerBUT2, myTimerCallbackBUT2, &myTimerBUT2ControlBlock);
   myTimerBUT2Handle = osTimerCreate(osTimer(myTimerBUT2), osTimerPeriodic, NULL);
 
   /* definition and creation of myTimerBUT1 */
@@ -934,9 +934,9 @@ static void MX_TIM8_Init(void)
 
   /* USER CODE END TIM8_Init 1 */
   htim8.Instance = TIM8;
-  htim8.Init.Prescaler = 0x1;
+  htim8.Init.Prescaler = 0xFFFF;
   htim8.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim8.Init.Period = 0x1;
+  htim8.Init.Period = 0x1000;
   htim8.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim8.Init.RepetitionCounter = 0;
   if (HAL_TIM_Base_Init(&htim8) != HAL_OK)
@@ -1117,14 +1117,15 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, RELAY_1_Pin|RELAY_2_Pin|HG_1_Pin|HG_2_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOC, RELAY_1_Pin|RELAY_2_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, SS_Pin|SS_2_Pin|SS_3_Pin|U1_DE_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOD, A_Pin|B_Pin|C_Pin|D_Pin 
-                          |E_Pin|F_Pin|G_Pin|DP_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOD, HG_1_Pin|HG_2_Pin|A_Pin|B_Pin 
+                          |C_Pin|D_Pin|E_Pin|F_Pin 
+                          |G_Pin|DP_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : SENS2_FAIL_Pin SENS1_FAIL_Pin */
   GPIO_InitStruct.Pin = SENS2_FAIL_Pin|SENS1_FAIL_Pin;
@@ -1132,8 +1133,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : RELAY_1_Pin RELAY_2_Pin HG_1_Pin HG_2_Pin */
-  GPIO_InitStruct.Pin = RELAY_1_Pin|RELAY_2_Pin|HG_1_Pin|HG_2_Pin;
+  /*Configure GPIO pins : RELAY_1_Pin RELAY_2_Pin */
+  GPIO_InitStruct.Pin = RELAY_1_Pin|RELAY_2_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -1145,6 +1146,17 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : HG_1_Pin HG_2_Pin A_Pin B_Pin 
+                           C_Pin D_Pin E_Pin F_Pin 
+                           G_Pin DP_Pin */
+  GPIO_InitStruct.Pin = HG_1_Pin|HG_2_Pin|A_Pin|B_Pin 
+                          |C_Pin|D_Pin|E_Pin|F_Pin 
+                          |G_Pin|DP_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
   /*Configure GPIO pin : BUT2_Pin */
   GPIO_InitStruct.Pin = BUT2_Pin;
@@ -1158,21 +1170,16 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(BUT1_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : A_Pin B_Pin C_Pin D_Pin 
-                           E_Pin F_Pin G_Pin DP_Pin */
-  GPIO_InitStruct.Pin = A_Pin|B_Pin|C_Pin|D_Pin 
-                          |E_Pin|F_Pin|G_Pin|DP_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
-
   /*Configure GPIO pin : U1_DE_Pin */
   GPIO_InitStruct.Pin = U1_DE_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(U1_DE_GPIO_Port, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
 }
 
@@ -1253,12 +1260,12 @@ void StartTaskModbus(void const * argument)
   /* USER CODE END StartTaskModbus */
 }
 
-/* myTimeCallbackBUT2 function */
-void myTimeCallbackBUT2(void const * argument)
+/* myTimerCallbackBUT2 function */
+void myTimerCallbackBUT2(void const * argument)
 {
-  /* USER CODE BEGIN myTimeCallbackBUT2 */
+  /* USER CODE BEGIN myTimerCallbackBUT2 */
   
-  /* USER CODE END myTimeCallbackBUT2 */
+  /* USER CODE END myTimerCallbackBUT2 */
 }
 
 /* myTimerCalbakBUT1 function */
