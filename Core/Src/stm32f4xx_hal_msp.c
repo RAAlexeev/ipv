@@ -164,11 +164,11 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* hadc)
     hdma_adc1.Init.MemInc = DMA_MINC_ENABLE;
     hdma_adc1.Init.PeriphDataAlignment = DMA_PDATAALIGN_WORD;
     hdma_adc1.Init.MemDataAlignment = DMA_MDATAALIGN_WORD;
-    hdma_adc1.Init.Mode = DMA_NORMAL;
+    hdma_adc1.Init.Mode = DMA_CIRCULAR;
     hdma_adc1.Init.Priority = DMA_PRIORITY_MEDIUM;
-    hdma_adc1.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
+    hdma_adc1.Init.FIFOMode = DMA_FIFOMODE_ENABLE;
     hdma_adc1.Init.FIFOThreshold = DMA_FIFO_THRESHOLD_FULL;
-    hdma_adc1.Init.MemBurst = DMA_MBURST_INC16;
+    hdma_adc1.Init.MemBurst = DMA_MBURST_SINGLE;
     hdma_adc1.Init.PeriphBurst = DMA_PBURST_SINGLE;
     if (HAL_DMA_Init(&hdma_adc1) != HAL_OK)
     {
@@ -207,9 +207,9 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* hadc)
     hdma_adc2.Init.MemInc = DMA_MINC_ENABLE;
     hdma_adc2.Init.PeriphDataAlignment = DMA_PDATAALIGN_WORD;
     hdma_adc2.Init.MemDataAlignment = DMA_MDATAALIGN_WORD;
-    hdma_adc2.Init.Mode = DMA_NORMAL;
+    hdma_adc2.Init.Mode = DMA_CIRCULAR;
     hdma_adc2.Init.Priority = DMA_PRIORITY_MEDIUM;
-    hdma_adc2.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
+    hdma_adc2.Init.FIFOMode = DMA_FIFOMODE_ENABLE;
     hdma_adc2.Init.FIFOThreshold = DMA_FIFO_THRESHOLD_FULL;
     hdma_adc2.Init.MemBurst = DMA_MBURST_SINGLE;
     hdma_adc2.Init.PeriphBurst = DMA_PBURST_SINGLE;
@@ -384,7 +384,7 @@ void HAL_I2C_MspInit(I2C_HandleTypeDef* hi2c)
     hdma_i2c1_rx.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
     hdma_i2c1_rx.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
     hdma_i2c1_rx.Init.Mode = DMA_NORMAL;
-    hdma_i2c1_rx.Init.Priority = DMA_PRIORITY_LOW;
+    hdma_i2c1_rx.Init.Priority = DMA_PRIORITY_HIGH;
     hdma_i2c1_rx.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
     if (HAL_DMA_Init(&hdma_i2c1_rx) != HAL_OK)
     {
@@ -740,7 +740,7 @@ void HAL_TIM_Base_MspInit(TIM_HandleTypeDef* htim_base)
     hdma_tim8_up.Init.Priority = DMA_PRIORITY_VERY_HIGH;
     hdma_tim8_up.Init.FIFOMode = DMA_FIFOMODE_ENABLE;
     hdma_tim8_up.Init.FIFOThreshold = DMA_FIFO_THRESHOLD_FULL;
-    hdma_tim8_up.Init.MemBurst = DMA_MBURST_INC4;
+    hdma_tim8_up.Init.MemBurst = DMA_MBURST_SINGLE;
     hdma_tim8_up.Init.PeriphBurst = DMA_PBURST_SINGLE;
     if (HAL_DMA_Init(&hdma_tim8_up) != HAL_OK)
     {
