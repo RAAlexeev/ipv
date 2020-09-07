@@ -110,8 +110,8 @@ osSemaphoreId myCountingSemBUT1Handle;
 osStaticSemaphoreDef_t myCountingSemBUT1ControlBlock;
 osSemaphoreId myCountingSemBUT2Handle;
 osStaticSemaphoreDef_t myCountingSemBUT2ControlBlock;
-osSemaphoreId myCountingSemTIM4Handle;
-osStaticSemaphoreDef_t myCountingSemTIM4ControlBlock;
+osSemaphoreId myCountingSemMBhandle;
+osStaticSemaphoreDef_t myCountingSemMBcontrolBlock;
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
 
@@ -164,14 +164,76 @@ void myTimerCalbakBUT1(void const * argument);
 	return ITM_SendChar((ch));
  }
 
+ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart){
+
+
+ 	  __HAL_UART_CLEAR_OREFLAG(huart);
+
+
+ 	  __HAL_UART_CLEAR_NEFLAG(huart);
+
+
+ 	  __HAL_UART_CLEAR_FEFLAG(huart);
+ 	  /* Disable the UART Error Interrupt: (Frame error, noise error, overrun error) */
+
+
+ 		if (osSemaphoreRelease(myCountingSemMBhandle)!= osOK){
+ 			  Error_Handler();
+ 		}
+
+
+
+ //	__HAL_UART_DISABLE_IT(&huart1, UART_IT_IDLE);
+ //	if (osSemaphoreRelease(myBinSemMBhandle)!= osOK){
+ //		  Error_Handler();
+ //	}
+ }
+ extern uint8_t mb_buf_in[256];
+
+
+ void myUSART1_IRQHandler(){
+
+
+
+
+
+ 	// if(HAL_TIM_Base_Start_IT(&htim3)!=HAL_OK){
+ //		 Error_Handler();
+ //	 }
+     if ((__HAL_UART_GET_FLAG(&huart1, UART_FLAG_RXNE) != RESET) && (__HAL_UART_GET_IT_SOURCE(&huart1, UART_IT_RXNE) != RESET)){
+     	 HAL_UART_IRQHandler(&huart1);
+    	 if(	HAL_UART_Receive_DMA(&huart1,mb_buf_in+1,256) != HAL_OK) {
+    			  Error_Handler();
+    		  }
+     	__HAL_UART_ENABLE_IT(&huart1, UART_IT_IDLE);
+
+     }else
+
+ 	if (((__HAL_UART_GET_FLAG(&huart1, UART_FLAG_IDLE) != RESET) && (__HAL_UART_GET_IT_SOURCE(&huart1, UART_IT_IDLE) != RESET))
+ 			|| (__HAL_UART_GET_IT_SOURCE(&huart1, UART_IT_CM) != RESET)){
+
+ 		static uint32_t DMA_cnt,  IT_cnt=0;
+
+ 		if(DMA_cnt == __HAL_DMA_GET_COUNTER(huart1.hdmarx))IT_cnt++;
+ 		else IT_cnt = 0;
+ 		DMA_cnt=__HAL_DMA_GET_COUNTER(huart1.hdmarx);
+ 		if(IT_cnt > huart1.Init.BaudRate/5760+25){
+ 			IT_cnt=0;
+ 			__HAL_UART_DISABLE_IT(&huart1, UART_IT_IDLE);
+ 			if (osSemaphoreRelease(myCountingSemMBhandle)!= osOK){
+ 			  Error_Handler();
+ 			}
+ 		}
+
+ 	} ;
+ }
 /* USER CODE END 0 */
 
 /**
   * @brief  The application entry point.
   * @retval int
   */
-int main(void)
-{
+int main(void){
   /* USER CODE BEGIN 1 */
    
 
@@ -276,8 +338,8 @@ int main(void)
   myCountingSemBUT2Handle = osSemaphoreCreate(osSemaphore(myCountingSemBUT2), 2);
 
   /* definition and creation of myCountingSemTIM4 */
-  osSemaphoreStaticDef(myCountingSemTIM4, &myCountingSemTIM4ControlBlock);
-  myCountingSemTIM4Handle = osSemaphoreCreate(osSemaphore(myCountingSemTIM4), 2);
+  osSemaphoreStaticDef(myCountingSemTIM4, &myCountingSemMBcontrolBlock);
+  myCountingSemMBhandle = osSemaphoreCreate(osSemaphore(myCountingSemTIM4), 2);
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
   /* add semaphores, ... */
@@ -931,7 +993,7 @@ static void MX_TIM8_Init(void)
   htim8.Instance = TIM8;
   htim8.Init.Prescaler = 42000;
   htim8.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim8.Init.Period = 40;
+  htim8.Init.Period = 20;
   htim8.Init.ClockDivision = TIM_CLOCKDIVISION_DIV4;
   htim8.Init.RepetitionCounter = 0;
   if (HAL_TIM_Base_Init(&htim8) != HAL_OK)
@@ -1592,6 +1654,18 @@ void StartTask_S2(void const * argument)
 }
 
 /* USER CODE BEGIN Header_StartTaskModbus */
+void sendData(uint8_t* data, uint8_t len ){
+	if(len==0){
+		if(	HAL_UART_Receive_IT(&huart1,mb_buf_in,1) != HAL_OK) {
+		  Error_Handler();
+		}
+	}else{
+	  HAL_GPIO_WritePin(DIR_GPIO_Port,DIR_Pin,GPIO_PIN_SET);
+	  if( HAL_UART_Transmit_DMA( &huart1, data, len )!= HAL_OK ){
+		  Error_Handler(); // by USB-CDC
+	  }
+	}
+}
 /**
 * @brief Function implementing the myTaskModbus thread.
 * @param argument: Not used
@@ -1601,29 +1675,23 @@ void StartTask_S2(void const * argument)
 void StartTaskModbus(void const * argument)
 {
   /* USER CODE BEGIN StartTaskModbus */
-  ModBus_Init();
-  extern uint8_t mb_buf_in[256];
-  if( HAL_OK  != HAL_UART_Receive_DMA(&huart1, (uint8_t*)mb_buf_in , 20) )
-  {
-    _Error_Handler(__FILE__, __LINE__);
-  }  
-  uint16_t  param; 
-  EE_read(0, (uint8_t *)&param, 2);
-  ModBus_SetRegister(0, param);
-  My_USART1_UART_ReInit();
-/* Infinite loop */
-  for(;;)
-  {
-    if ( osSemaphoreWait(myCountingSemTIM4Handle, portMAX_DELAY) != osOK )
-    {
-      _Error_Handler(__FILE__, __LINE__);
-    }
-    
-    if ( ModBusParse( 20 - __HAL_DMA_GET_COUNTER( huart1.hdmarx ) ) )
-    {
-      HAL_UART_Receive_DMA(&huart1, (uint8_t*)mb_buf_in , 20);
-      HAL_NVIC_EnableIRQ(TIM4_IRQn);  
-    }
+	ModBus_Init();
+	ModBus_SetAddress(1);
+	if(	HAL_UART_Receive_IT(&huart1,mb_buf_in,1) != HAL_OK) {
+		  Error_Handler();
+	}
+	//HAL_UART_Receive_DMA(&huart1,mb_buf_in,256);
+	 ///* Infinite loop */
+	  for(;;)
+	  {
+			 if( osSemaphoreWait(myCountingSemMBhandle, osWaitForever )!= osOK ){
+				 Error_Handler();
+			 }
+			  HAL_UART_DMAStop( &huart1 );
+
+			  uint32_t cnt =256 -	__HAL_DMA_GET_COUNTER(huart1.hdmarx)+1;
+
+			ModBusParse(cnt);
     
   }
   /* USER CODE END StartTaskModbus */
