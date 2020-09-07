@@ -17,14 +17,15 @@ class SignalChenal{
 	CircularBuffer<float32_t,7> velocity_ =  CircularBuffer<float32_t,7>();
 	CircularBuffer<float32_t,7> acceleration_ =  CircularBuffer<float32_t,7>();
 	float32_t y = 0;
-	float32_t buffer1[BUFLEN],buffer2[BUFLEN];
-	float32_t * buffer=buffer1;
+
+	float32_t * buffer=buffer2;
 
 
 public:
-
+	float32_t buffer1[BUFLEN],buffer2[BUFLEN];
 	SignalChenal();
 	static void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc);
+	static void HAL_ADC_M1ConvCpltCallback(DMA_HandleTypeDef * 	hdma);
 	void * swBuffer();
 	void calc();
 	inline float32_t getVelocity(){
@@ -33,8 +34,9 @@ public:
 	inline float32_t getAccelerarion(){
 		return acceleration_.average();
 	}
-	static SignalChenal* getInstance(ADC_HandleTypeDef* hadc){
-		return &instances[hadc->Instance == ADC1 ?0:1];
+	static SignalChenal* getInstance(void* hadc){
+		extern ADC_HandleTypeDef hadc1;
+		return &instances[((ADC_HandleTypeDef*)hadc)== &hadc1 ?0:1];
 	}
 	static	void init();
 };

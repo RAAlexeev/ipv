@@ -70,23 +70,25 @@ uint16_t SC39_get_dig(uint8_t n, bool dot) {
 inline uint8_t getDig(float32_t val, int8_t dig){
 	uint32_t pow10 = 1;
 	for(uint8_t i=0; i < dig; i++) pow10 *= 10;
-	return static_cast<uint8_t>(static_cast<uint32_t>(round(val*10))/pow10 % 10);
+
+	return static_cast<uint8_t>(static_cast<uint32_t>(val)/pow10 % 10);
 }
 
-void SC39_show(float32_t n, bool ch) {
+void SC39_show(float32_t val, bool ch) {
 
 	uint8_t d1, d2; //intPart = static_cast<uint8_t>(round(n*10)/10);
 	bool dot1=false,dot2=false;
-	if (n < 10) {
-		d1=	getDig(n,1);
-		d2 = getDig(n,0);//round((n - intPart) * 10);
+	val=round(val*10)/10;
+	if (val < 10) {
+		d1=	getDig(val*10,1);
+		d2 = getDig(val*10,0);//round((n - intPart) * 10);
 		dot1=true;
-	} else if (n < 100) {
-		d1=	getDig(n,2);
-		d2 = getDig(n,1);//round(intPart - intPart / 10 * 10);
-	} else if (n < 200) {
-		d1=	getDig(n,2);//intPart=static_cast<uint8_t>(round(n));
-		d2 = getDig(n,1);//round(round(n) - intPart / 100 * 100)/10;
+	} else if (val < 100) {
+		d1=	getDig(val,1);
+		d2 = getDig(val,0);//round(intPart - intPart / 10 * 10);
+	} else if (val < 200) {
+		d1=	getDig(val,2);//intPart=static_cast<uint8_t>(round(n));
+		d2 = getDig(val,1);//round(round(n) - intPart / 100 * 100)/10;
 		dot2=true;
 	} else {
 		d1 = 'Ï';

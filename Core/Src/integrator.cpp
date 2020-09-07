@@ -20,8 +20,15 @@ extern ADC_HandleTypeDef hadc1;
 extern ADC_HandleTypeDef hadc2;
 
 void SignalChenal::HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
-
+	getInstance(hadc)->buffer = getInstance(hadc)->buffer1;
 	  osSemaphoreRelease((hadc == &hadc1)?myCountingSem_S01Handle:myCountingSem_S02Handle);
+
+	//	_DEBUG(myUtils::ITM_SendStr(( char*)((hadc->Instance == ADC1)?"\nS1":"\nS2")));
+	//	_DEBUG(myUtils::ITM_SendStr(( char*)((getInstance(hadc)->buffer==getInstance(hadc)->buffer1)?"-1\n":"-2\n")));
+}
+void SignalChenal::HAL_ADC_M1ConvCpltCallback(DMA_HandleTypeDef * 	hdma){
+	getInstance(hdma->Parent)->buffer = getInstance(hdma->Parent)->buffer2;
+	  osSemaphoreRelease((hdma->Parent == &hadc1)?myCountingSem_S01Handle:myCountingSem_S02Handle);
 
 	//	_DEBUG(myUtils::ITM_SendStr(( char*)((hadc->Instance == ADC1)?"\nS1":"\nS2")));
 	//	_DEBUG(myUtils::ITM_SendStr(( char*)((getInstance(hadc)->buffer==getInstance(hadc)->buffer1)?"-1\n":"-2\n")));
@@ -30,20 +37,7 @@ void SignalChenal::HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
 SignalChenal::SignalChenal(){
 
 }
-void SignalChenal::init()
-{
 
-
-	if ( HAL_OK != HAL_ADC_Start_DMA( &hadc1, reinterpret_cast<uint32_t *>(SignalChenal::getInstance(&hadc1)->buffer), LEN ))
-	  {
-	     _Error_Handler(__FILE__, __LINE__);
-	  }
-
-	  if ( HAL_OK != HAL_ADC_Start_DMA( &hadc2, reinterpret_cast<uint32_t *>(SignalChenal::getInstance(&hadc2)->buffer), LEN ))
-	  {
-	     _Error_Handler(__FILE__, __LINE__);
-	  }
-}
 /*void printDouble(double v, int decimalDigits)
 {
   int i = 1;
@@ -57,22 +51,23 @@ void SignalChenal::init()
 
 extern inline void filter( float32_t  *pSrc, float32_t *pDst, uint32_t blockSize);
 
-void * SignalChenal::swBuffer(){
+inline void * SignalChenal::swBuffer(){
 
     return buffer=(buffer==buffer2)?buffer1:buffer2;
 }
 
 void SignalChenal::calc() {
-#define k (0.999f)
+#define k (0.9965f)
 #define N (16000)
 //	_DEBUG(myUtils::ITM_SendStr(getInstance(&hadc1)==this?"1":"2"));
 	//uint16_t *srcInt = static_cast<uint16_t *>( _src);
-
 	float *src=buffer;
+	swBuffer();
 
-    if ( HAL_OK != HAL_ADC_Start_DMA( &instances[0]==this?&hadc1:&hadc2, (uint32_t *)(swBuffer()), LEN ))
+
+ //   if ( HAL_OK != HAL_ADC_Start_DMA( &instances[0]==this?&hadc1:&hadc2, (uint32_t *)(swBuffer()), LEN ))
       {
-         _Error_Handler(__FILE__, __LINE__);
+ //        _Error_Handler(__FILE__, __LINE__);
       }
 
 

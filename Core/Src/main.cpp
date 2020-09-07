@@ -157,7 +157,7 @@ void myTimerCalbakBUT1(void const * argument);
 /* USER CODE BEGIN 0 */
 
  void _Error_Handler(const char *f, const uint16_t l){
-
+	 for(;;);
  }
 
  int __io_putchar(int ch){
@@ -215,7 +215,6 @@ int main(void)
   //MX_WWDG_Init();
   /* USER CODE BEGIN 2 */
   HAL_GPIO_WritePin(RELAY_1_GPIO_Port, RELAY_1_Pin, GPIO_PIN_SET);
-  SignalChenal::init();
 
 
 	//setCoef(1,0x0);
@@ -307,11 +306,11 @@ int main(void)
 
   /* definition and creation of myTask_S1 */
   osThreadStaticDef(myTask_S1, StartTask_S1, osPriorityAboveNormal, 0, 500, myTask_S1Buffer, &myTask_S1ControlBlock);
-//  myTask_S1Handle = osThreadCreate(osThread(myTask_S1), NULL);
+  myTask_S1Handle = osThreadCreate(osThread(myTask_S1), NULL);
 
   /* definition and creation of myTask_S2 */
   osThreadStaticDef(myTask_S2, StartTask_S2, osPriorityAboveNormal, 0, 500, myTask_S2Buffer, &myTask_S2ControlBlock);
- // myTask_S2Handle = osThreadCreate(osThread(myTask_S2), NULL);
+  myTask_S2Handle = osThreadCreate(osThread(myTask_S2), NULL);
 
   /* definition and creation of myTaskModbus */
 //  osThreadStaticDef(myTaskModbus, StartTaskModbus, osPriorityBelowNormal, 0, 128, myTaskModbusBuffer, &myTaskModbusControlBlock);
@@ -1472,7 +1471,31 @@ void StartDefaultTask(void const * argument)
 void StartTask_S1(void const * argument)
 {
   /* USER CODE BEGIN StartTask_S1 */
-  HAL_TIM_Base_Start(&htim2);
+	 HAL_DMA_RegisterCallback(&hdma_adc1,HAL_DMA_XFER_M1CPLT_CB_ID,SignalChenal::HAL_ADC_M1ConvCpltCallback);
+	if ( HAL_OK != HAL_ADC_Start_DMA( &hadc1, reinterpret_cast<uint32_t *>(SignalChenal::getInstance(&hadc1)->buffer1), LEN ))
+	// if ( HAL_OK != HAL_ADC_Start(&hadc1))
+	 {
+	     _Error_Handler(__FILE__, __LINE__);
+	  }
+
+	uint32_t b1 = reinterpret_cast<uint32_t>(&SignalChenal::getInstance(&hadc1)->buffer1);
+	uint32_t b2 = reinterpret_cast<uint32_t>(&SignalChenal::getInstance(&hadc1)->buffer2);
+//	DMA_MultiBufferSetConfig(hdma_adc1, reinterpret_cast<uint32_t>(&(hadc1.Instance->DR)),b1, LEN);
+
+
+
+	if ( HAL_OK != 	   HAL_DMAEx_MultiBufferStart_IT( &hdma_adc1
+												,reinterpret_cast<uint32_t>(&(hadc1.Instance->DR))
+												,b1
+												,b2
+												,LEN )) {
+		     _Error_Handler(__FILE__, __LINE__);
+		  }
+	hdma_adc1.Instance->CR  &= ~DMA_IT_HT;
+	if ( HAL_OK != HAL_TIM_Base_Start(&htim2)){
+		     _Error_Handler(__FILE__, __LINE__);
+		}
+
   //if (ARM_MATH_SUCCESS != rfft_init()) while(1);
   /* Infinite loop */
   for(;;)
@@ -1530,7 +1553,30 @@ void StartTask_S1(void const * argument)
 void StartTask_S2(void const * argument)
 {
   /* USER CODE BEGIN StartTask_S2 */
-	  HAL_TIM_Base_Start(&htim2);
+	 HAL_DMA_RegisterCallback(&hdma_adc2,HAL_DMA_XFER_M1CPLT_CB_ID,SignalChenal::HAL_ADC_M1ConvCpltCallback);
+	if ( HAL_OK != HAL_ADC_Start_DMA( &hadc2, reinterpret_cast<uint32_t *>(SignalChenal::getInstance(&hadc2)->buffer1), LEN ))
+	// if ( HAL_OK != HAL_ADC_Start(&hadc1))
+	 {
+	     _Error_Handler(__FILE__, __LINE__);
+	  }
+
+	uint32_t b1 = reinterpret_cast<uint32_t>(&SignalChenal::getInstance(&hadc2)->buffer1);
+	uint32_t b2 = reinterpret_cast<uint32_t>(&SignalChenal::getInstance(&hadc2)->buffer2);
+//	DMA_MultiBufferSetConfig(hdma_adc1, reinterpret_cast<uint32_t>(&(hadc1.Instance->DR)),b1, LEN);
+
+
+
+	if ( HAL_OK != 	   HAL_DMAEx_MultiBufferStart_IT( &hdma_adc2
+												,reinterpret_cast<uint32_t>(&(hadc2.Instance->DR))
+												,b1
+												,b2
+												,LEN )) {
+		     _Error_Handler(__FILE__, __LINE__);
+		  }
+
+	if ( HAL_OK != HAL_TIM_Base_Start(&htim2)){
+		     _Error_Handler(__FILE__, __LINE__);
+	}
 
   /* Infinite loop */
   for(;;)
