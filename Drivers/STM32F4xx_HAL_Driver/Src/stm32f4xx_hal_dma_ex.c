@@ -207,7 +207,7 @@ HAL_StatusTypeDef HAL_DMAEx_MultiBufferStart_IT(DMA_HandleTypeDef *hdma, uint32_
     hdma->Instance->M1AR = SecondMemAddress;
     
     /* Configure the source, destination address and the data length */
-    DMA_MultiBufferSetConfig(hdma, SrcAddress, DstAddress, DataLength);
+    DMA_MultiBufferSetConfig(hdma, SrcAddress, DstAddress, DataLength); 
     
     /* Clear all flags */
     __HAL_DMA_CLEAR_FLAG (hdma, __HAL_DMA_GET_TC_FLAG_INDEX(hdma));

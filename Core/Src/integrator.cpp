@@ -84,7 +84,7 @@ void SignalChenal::calc() {
 		float32_t  sumQ=0,sum=0,res;
 	}A;
 
-	float32_t *bufOut_f32 = new float32_t[LEN];
+	float32_t *bufOut_f32 = (float32_t*)malloc(LEN*sizeof(float32_t));// new(std::nothrow) float32_t[LEN];
 while(bufOut_f32==NULL){
 	;
 }
@@ -109,7 +109,7 @@ while(bufOut_f32==NULL){
 			//bufOut_f32[i]=y;
 	}
 
-	delete[] bufOut_f32;
+	free( bufOut_f32 );
 	if(ARM_MATH_SUCCESS == arm_sqrt_f32( ( A.sumQ*LEN - A.sum*A.sum )/(LEN*LEN), &A.res ) ){
 		acceleration_.put( A.res );
 	}

@@ -18,8 +18,8 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "FFT.h"   
-#include "modbus-master/modbus.h"
-#include "EEPROM.h"
+#include "modbus.h"
+#include "EEPROM.hpp"
 #include "integrator.hpp"
 #include "myUtils.hpp"
 #include "SC39-11driver.h"
@@ -156,6 +156,10 @@ void myTimerCalbakBUT1(void const * argument);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
+
+inline void delay(uint32_t ms){
+	osDelay(ms);
+}
  void _Error_Handler(const char *f, const uint16_t l){
 	 for(;;);
  }
@@ -188,45 +192,10 @@ void myTimerCalbakBUT1(void const * argument);
  //		  Error_Handler();
  //	}
  }
- extern uint8_t mb_buf_in[256];
-
-
- void myUSART1_IRQHandler(){
 
 
 
 
-
- 	// if(HAL_TIM_Base_Start_IT(&htim3)!=HAL_OK){
- //		 Error_Handler();
- //	 }
-     if ((__HAL_UART_GET_FLAG(&huart1, UART_FLAG_RXNE) != RESET) && (__HAL_UART_GET_IT_SOURCE(&huart1, UART_IT_RXNE) != RESET)){
-     	 HAL_UART_IRQHandler(&huart1);
-    	 if(	HAL_UART_Receive_DMA(&huart1,mb_buf_in+1,256) != HAL_OK) {
-    			  Error_Handler();
-    		  }
-     	__HAL_UART_ENABLE_IT(&huart1, UART_IT_IDLE);
-
-     }else
-
- 	if (((__HAL_UART_GET_FLAG(&huart1, UART_FLAG_IDLE) != RESET) && (__HAL_UART_GET_IT_SOURCE(&huart1, UART_IT_IDLE) != RESET))
- 			|| (__HAL_UART_GET_IT_SOURCE(&huart1, UART_IT_CM) != RESET)){
-
- 		static uint32_t DMA_cnt,  IT_cnt=0;
-
- 		if(DMA_cnt == __HAL_DMA_GET_COUNTER(huart1.hdmarx))IT_cnt++;
- 		else IT_cnt = 0;
- 		DMA_cnt=__HAL_DMA_GET_COUNTER(huart1.hdmarx);
- 		if(IT_cnt > huart1.Init.BaudRate/5760+25){
- 			IT_cnt=0;
- 			__HAL_UART_DISABLE_IT(&huart1, UART_IT_IDLE);
- 			if (osSemaphoreRelease(myCountingSemMBhandle)!= osOK){
- 			  Error_Handler();
- 			}
- 		}
-
- 	} ;
- }
 /* USER CODE END 0 */
 
 /**
@@ -235,7 +204,9 @@ void myTimerCalbakBUT1(void const * argument);
   */
 int main(void){
   /* USER CODE BEGIN 1 */
-   
+
+	uint32_t *ACTLR = (uint32_t *)0xE000E008;
+	*ACTLR |= 2;
 
   /* USER CODE END 1 */
 
@@ -285,7 +256,7 @@ int main(void){
 //	setCoef(1,0x200);
 	//  HAL_TIM_Base_Start(&htim3);
 
-	uint8_t uartBuf;
+	//uint8_t uartBuf;
 
 //	 uint8_t  *buf =(uint8_t*)"qqqqqqqqqqqqqqqqqqq";
 //	HAL_UART_Transmit( &huart1,buf,10,100 );
@@ -338,13 +309,17 @@ int main(void){
   myCountingSemBUT2Handle = osSemaphoreCreate(osSemaphore(myCountingSemBUT2), 2);
 
   /* definition and creation of myCountingSemTIM4 */
-  osSemaphoreStaticDef(myCountingSemTIM4, &myCountingSemMBcontrolBlock);
-  myCountingSemMBhandle = osSemaphoreCreate(osSemaphore(myCountingSemTIM4), 2);
+  osSemaphoreStaticDef(myCountingSemMB, &myCountingSemMBcontrolBlock);
+  myCountingSemMBhandle = osSemaphoreCreate(osSemaphore(myCountingSemMB), 2);
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
   /* add semaphores, ... */
   osSemaphoreWait( myCountingSem_S01Handle, portMAX_DELAY);
-  osSemaphoreWait( myCountingSem_S01Handle, portMAX_DELAY); 
+  osSemaphoreWait( myCountingSem_S02Handle, portMAX_DELAY);
+  osSemaphoreWait( myCountingSemMBhandle, portMAX_DELAY);
+  osSemaphoreWait( myCountingSem_S01Handle, portMAX_DELAY);
+  osSemaphoreWait( myCountingSem_S02Handle, portMAX_DELAY);
+  osSemaphoreWait( myCountingSemMBhandle, portMAX_DELAY);
 
   /* USER CODE END RTOS_SEMAPHORES */
 
@@ -375,8 +350,8 @@ int main(void){
   myTask_S2Handle = osThreadCreate(osThread(myTask_S2), NULL);
 
   /* definition and creation of myTaskModbus */
-//  osThreadStaticDef(myTaskModbus, StartTaskModbus, osPriorityBelowNormal, 0, 128, myTaskModbusBuffer, &myTaskModbusControlBlock);
-//  myTaskModbusHandle = osThreadCreate(osThread(myTaskModbus), NULL);
+  osThreadStaticDef(myTaskModbus, StartTaskModbus, osPriorityBelowNormal, 0, 128, myTaskModbusBuffer, &myTaskModbusControlBlock);
+  myTaskModbusHandle = osThreadCreate(osThread(myTaskModbus), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -1186,9 +1161,9 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : RELAY_1_Pin RELAY_2_Pin HG_1_Pin HG_2_Pin */
+  /*Configure GPIO pins : RELAY_1_Pin RELAY_2_Pin */
   GPIO_InitStruct.Pin = RELAY_1_Pin|RELAY_2_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
@@ -1223,7 +1198,7 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin : U1_DE_Pin */
   GPIO_InitStruct.Pin = U1_DE_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(U1_DE_GPIO_Port, &GPIO_InitStruct);
@@ -1498,24 +1473,10 @@ void StartDefaultTask(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-	//	float32_t velocity=SignalChenal::getInstance(&hadc1)->getVelocity();
-	//	int32_t velocityInt = static_cast<int32_t>(velocity);
 
-		static unsigned  char ch='\r';
-
-		//if( ch=='\0' ) ch='\n'; else ch='\0';
-	//	uint8_t end=sprintf(out,"%i,%i;",(int)velocityInt,(int)((velocity-velocityInt)*100));
-	//	out[end] = ch;
-	//	out[end+1] = 0;
-//	myUtils::ITM_SendStr(out);
-   // runCnt++;
-
-   // SC39_showDig('8',GPIO_PIN_SET,1);
-
-  //  SC39_showDig('1',GPIO_PIN_SET,2);
-		screen.display();
+	screen.display();
     osDelay(10);
-    //display();
+
 
   }
   
@@ -1628,7 +1589,7 @@ void StartTask_S2(void const * argument)
 
 
 
-	if ( HAL_OK != 	   HAL_DMAEx_MultiBufferStart_IT( &hdma_adc2
+	if ( HAL_OK != HAL_DMAEx_MultiBufferStart_IT( &hdma_adc2
 												,reinterpret_cast<uint32_t>(&(hadc2.Instance->DR))
 												,b1
 												,b2
@@ -1660,12 +1621,24 @@ void sendData(uint8_t* data, uint8_t len ){
 		  Error_Handler();
 		}
 	}else{
-	  HAL_GPIO_WritePin(DIR_GPIO_Port,DIR_Pin,GPIO_PIN_SET);
+	  HAL_GPIO_WritePin(U1_DE_GPIO_Port,U1_DE_Pin,GPIO_PIN_SET);
 	  if( HAL_UART_Transmit_DMA( &huart1, data, len )!= HAL_OK ){
-		  Error_Handler(); // by USB-CDC
+		  Error_Handler();
 	  }
 	}
 }
+
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart){
+//	if(huart == &huart1)
+
+	HAL_GPIO_WritePin(U1_DE_GPIO_Port,U1_DE_Pin,GPIO_PIN_RESET);
+	  if(	HAL_UART_Receive_IT(&huart1,mb_buf_in,1) != HAL_OK) {
+		  Error_Handler();
+	  }
+}
+ void HAL_UART_AbortTransmitCpltCallback(UART_HandleTypeDef *huart){
+	 HAL_UART_TxCpltCallback(huart);
+ }
 /**
 * @brief Function implementing the myTaskModbus thread.
 * @param argument: Not used
@@ -1677,6 +1650,7 @@ void StartTaskModbus(void const * argument)
   /* USER CODE BEGIN StartTaskModbus */
 	ModBus_Init();
 	ModBus_SetAddress(1);
+	HAL_GPIO_WritePin(U1_DE_GPIO_Port,U1_DE_Pin,GPIO_PIN_RESET);
 	if(	HAL_UART_Receive_IT(&huart1,mb_buf_in,1) != HAL_OK) {
 		  Error_Handler();
 	}

@@ -19,7 +19,7 @@
 //#define b22 1
 //#define a21 -1.522842884063720703125//-1.5228429402520176
 //#define a22 0.66085374355316162109375//0.66085375658373646
-#include <vector>
+
 #include "main.h"
 #include "arm_math.h"
 class Filter {

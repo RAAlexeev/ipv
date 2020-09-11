@@ -888,7 +888,7 @@ void HAL_DMA_IRQHandler(DMA_HandleTypeDef *hdma)
       if(((hdma->Instance->CR) & (uint32_t)(DMA_SxCR_DBM)) != RESET)
       {
         /* Current memory buffer used is Memory 0 */
-        if(((hdma->Instance->CR) & (uint32_t)DMA_SxCR_CT) == RESET)
+        if((hdma->Instance->CR & DMA_SxCR_CT) == RESET)
         {
           if(hdma->XferM1CpltCallback != NULL)
           {

@@ -4,7 +4,7 @@
 #include "main.h"
 #include "arm_math.h"
 
-class Screen{
+extern class Screen{
 
 	uint8_t curPos=0;
 
@@ -17,9 +17,7 @@ public:
 
 	void display();
 
-}screen;
-
-
+} screen;
  
 #endif
 
@@ -33,20 +31,44 @@ class MenuItem{
 		Action action,setVal;
 		GetValue getVal;
 		uint8_t diode;
-		MenuItem(const Action act=NULL, const Action setVal=NULL, const GetValue getValue=NULL): action(act),setVal(setVal),getVal(getValue){
+public:
+		MenuItem(const GetValue getValue=NULL, const Action setVal=NULL, const Action act=NULL ): action(act),setVal(setVal),getVal(getValue){
 		};
 		float32_t  getValue() const{
 			return getVal?getVal():value;
 		};
 		void setValue(float32_t val){
-			value=val;
 			if(setVal)setVal(value);
+			value=val;
 		}
 };
 
-class Menu{
-	uint8_t curItemIndex;
+extern struct Menu{
+	uint8_t curIndex=0;
+	uint8_t curCH=0;
 	static MenuItem items[];
-	void move();
-	void edit();
-} menu;
+	static uint8_t maxIndex;
+	void up(){
+		if(curIndex < maxIndex/2)
+		curIndex++;
+		else
+		curIndex=0;
+	}
+	void down(){
+		if(curIndex)
+		curIndex++;
+		else
+		curIndex=maxIndex;
+	}
+	void swCH(){
+		curCH=!curCH;
+	}
+
+	void edit(){
+
+	}
+	MenuItem* getCurentItem(){
+		return &(items[curIndex]);
+	}
+	void display();
+}menu;

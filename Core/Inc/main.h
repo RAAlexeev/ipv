@@ -87,7 +87,7 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 void _Error_Handler(const char *f,const uint16_t line);
 
 /* USER CODE BEGIN EFP */
-#define Error_Handler()_Error_Handler(__FILE__,__LINE__);
+extern uint8_t mb_buf_in[256];
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
@@ -134,7 +134,7 @@ void _Error_Handler(const char *f,const uint16_t line);
 #define U1_DE_Pin GPIO_PIN_5
 #define U1_DE_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
-
+#define Error_Handler()_Error_Handler(__FILE__,__LINE__);
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

@@ -93,7 +93,36 @@ extern DMA_HandleTypeDef hdma_usart1_rx;
 extern DMA_HandleTypeDef hdma_usart1_tx;
 extern UART_HandleTypeDef huart1;
 /* USER CODE BEGIN EV */
+void prvGetRegistersFromStack( uint32_t *pulFaultStackAddress )
+{
+   /* «десь используетс€ volatile в попытке предотвратить оптимизацию
+      компил€тора/линкера, которые люб€т выбрасывать переменные,
+      которые реально нигде не используютс€. ≈сли отладчик не показывает
+      значение этих переменных, то сделайте их глобальными, вытащив
+      их декларацию за пределы этой функции. */
+   volatile uint32_t r0;
+   volatile uint32_t r1;
+   volatile uint32_t r2;
+   volatile uint32_t r3;
+   volatile uint32_t r12;
+   volatile uint32_t lr; /* регистр св€зи (Link Register) */
+   volatile uint32_t pc; /* программный счетчик (Program Counter) */
+   volatile uint32_t psr;/* регистр состо€ни€ (Program Status Register) */
 
+   r0 = pulFaultStackAddress[ 0 ];
+   r1 = pulFaultStackAddress[ 1 ];
+   r2 = pulFaultStackAddress[ 2 ];
+   r3 = pulFaultStackAddress[ 3 ];
+
+   r12 = pulFaultStackAddress[ 4 ];
+   lr = pulFaultStackAddress[ 5 ];
+   pc = pulFaultStackAddress[ 6 ];
+   psr = pulFaultStackAddress[ 7 ];
+
+   /*  огда выполнение дойдет до этой точки, переменные будут
+      содержать значени€ регистров. */
+   for( ;; );
+}
 /* USER CODE END EV */
 
 /******************************************************************************/
@@ -115,10 +144,20 @@ void NMI_Handler(void)
 /**
   * @brief This function handles Hard fault interrupt.
   */
-void HardFault_Handler(void)
-{
-  /* USER CODE BEGIN HardFault_IRQn 0 */
+void HardFault_Handler(void){
 
+  /* USER CODE BEGIN HardFault_IRQn 0 */
+	  __asm volatile
+	    (
+	        " tst lr, #4                                                \n"
+	        " ite eq                                                    \n"
+	        " mrseq r0, msp                                             \n"
+	        " mrsne r0, psp                                             \n"
+	        " ldr r1, [r0, #24]                                         \n"
+	        " ldr r2, handler2_address_const                            \n"
+	        " bx r2                                                     \n"
+	        " handler2_address_const: .word prvGetRegistersFromStack    \n"
+	    );
   /* USER CODE END HardFault_IRQn 0 */
   while (1)
   {
@@ -255,6 +294,33 @@ void TIM4_IRQHandler(void)
 void USART1_IRQHandler(void)
 {
   /* USER CODE BEGIN USART1_IRQn 0 */
+	extern osSemaphoreId myCountingSemMBhandle;
+	    if ((__HAL_UART_GET_FLAG(&huart1, UART_FLAG_RXNE) != RESET) && (__HAL_UART_GET_IT_SOURCE(&huart1, UART_IT_RXNE) != RESET)){
+	    	 HAL_UART_IRQHandler(&huart1);
+	   	 if(	HAL_UART_Receive_DMA(&huart1,mb_buf_in+1,256) != HAL_OK) {
+	   			  Error_Handler();
+	   		  }
+	    	__HAL_UART_ENABLE_IT(&huart1, UART_IT_IDLE);
+
+	    }else
+
+		if (((__HAL_UART_GET_FLAG(&huart1, UART_FLAG_IDLE) != RESET) && (__HAL_UART_GET_IT_SOURCE(&huart1, UART_IT_IDLE) != RESET))
+				/*|| (__HAL_UART_GET_IT_SOURCE(&huart1, UART_IT_CM) != RESET)*/){
+
+			static uint32_t DMA_cnt,  IT_cnt=0;
+
+			if(DMA_cnt == __HAL_DMA_GET_COUNTER(huart1.hdmarx))IT_cnt++;
+			else IT_cnt = 0;
+			DMA_cnt=__HAL_DMA_GET_COUNTER(huart1.hdmarx);
+			if(IT_cnt > huart1.Init.BaudRate/5760+25){
+				IT_cnt=0;
+				__HAL_UART_DISABLE_IT(&huart1, UART_IT_IDLE);
+				if (osSemaphoreRelease(myCountingSemMBhandle)!= osOK){
+				  Error_Handler();
+				}
+			}
+
+		}else
   /* USER CODE END USART1_IRQn 0 */
   HAL_UART_IRQHandler(&huart1);
   /* USER CODE BEGIN USART1_IRQn 1 */
