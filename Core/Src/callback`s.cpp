@@ -2,6 +2,7 @@
 #include "main.h"
 #include "stm32f4xx_hal.h"
 #include "cmsis_os.h"
+#include "integrator.hpp"
 
 extern osSemaphoreId myCountingSemBUT1Handle, myCountingSem_S01Handle, myCountingSem_S02Handle, myCountingSemBUT2Handle, myCountingSemTIM4Handle;
 extern osTimerId myTimerBUT1Handle, myTimerBUT2Handle;
@@ -14,21 +15,30 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
    switch( GPIO_Pin )
    {
      case BUT1_Pin:
-        if ( GPIO_PIN_SET == HAL_GPIO_ReadPin( BUT1_GPIO_Port, BUT1_Pin ) )
+        if ( GPIO_PIN_RESET == HAL_GPIO_ReadPin( BUT1_GPIO_Port, BUT1_Pin ) )
          {
               
                osTimerStart(myTimerBUT1Handle, 100 );
 
-         } else osTimerStop( myTimerBUT1Handle );
+         } else{
+           	 extern uint8_t but1pressed;
+           	 but1pressed = 0;
+
+           	 osTimerStop(myTimerBUT1Handle);
+
+         }
           
      break;
      case BUT2_Pin:
-         if ( GPIO_PIN_SET == HAL_GPIO_ReadPin( BUT2_GPIO_Port, BUT2_Pin ) )
+         if ( GPIO_PIN_RESET == HAL_GPIO_ReadPin( BUT2_GPIO_Port, BUT2_Pin ) )
          {
             osTimerStart(myTimerBUT2Handle, 100 );          
            
-         } else osTimerStop(myTimerBUT2Handle);
-         
+         } else{
+           	 osTimerStop(myTimerBUT2Handle);
+          // 	 extern uint8_t but2pressed;
+           //	 but2pressed = 0;
+         }
            
        // osSemaphoreRelease(myCountingSemBUT1Handle);
      break;
@@ -41,7 +51,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 {
-	my_ADC_ConvCpltCallback(hadc);
+	SignalChenal::HAL_ADC_ConvCpltCallback(hadc);
+	//my_ADC_ConvCpltCallback(hadc);
 	/*
   if( hadc->Instance == ADC1 )
   osSemaphoreRelease(myCountingSem_S01Handle);

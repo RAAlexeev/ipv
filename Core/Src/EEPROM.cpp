@@ -85,8 +85,51 @@ inline bool data_get(T *bf, uint16_t addr,	uint16_t len)  {
 		}
 		return true;
 	}
-template <>
-bool data_get<uint8_t>(uint8_t *bf, uint16_t addr,	uint16_t len){
-	return data_get(bf,addr,len);
+
+template<typename T,int LENAREA>
+T EEPROM_t::VarEE<T,LENAREA>::_get(bool force) const{
+	if (value != 0 && !force)
+		return value;
+	T ret = static_cast<T>(0xFFFFFFFF);
+	T buf[LENAREA / sizeof(T)];
+
+	while (!data_get(buf, addr, LENAREA)) {
+	};
+
+	ret = buf[0];
+	for (volatile uint16_t i = 1; i < LENAREA / sizeof(T); i++) {
+		ret ^= buf[i];
+	}
+
+	return ret;
+}
+template<typename T,int LENAREA>
+T EEPROM_t::VarEE<T,LENAREA>::get( ) const {
+			T res = _get();
+
+			if (copy1 != NULL) {
+				T res1 = copy1->get();
+				if (res == res1)
+					return res;
+				else if (copy2 != NULL) {
+					T res2 = copy1->get();
+					if (res == res2)
+						return res;
+					else if (res1 == res2 && res < res1)
+						return res;
+					else
+						return (res1 < res2) ? res1 : res2;
+				}
+
+			}
+			return res;
+
+		}
+
+
+template<typename T,int LENAREA>
+T EEPROM_t::VarEE<T,LENAREA>::operator()()  {
+	return get();
 }
 
+template class EEPROM_t::VarEE <uint8_t,32>;

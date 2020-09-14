@@ -114,7 +114,7 @@ osSemaphoreId myCountingSemMBhandle;
 osStaticSemaphoreDef_t myCountingSemMBcontrolBlock;
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-
+uint8_t	but1pressed = 0;
  SignalChenal SignalChenal::instances[]={SignalChenal(),SignalChenal()};
  //Menu menu= Menu({});
  void PWM(float  velocity, float min, float max);
@@ -205,8 +205,8 @@ inline void delay(uint32_t ms){
 int main(void){
   /* USER CODE BEGIN 1 */
 
-	uint32_t *ACTLR = (uint32_t *)0xE000E008;
-	*ACTLR |= 2;
+	//uint32_t *ACTLR = (uint32_t *)0xE000E008;
+	//*ACTLR |= 2;
 
   /* USER CODE END 1 */
 
@@ -248,8 +248,9 @@ int main(void){
   //MX_WWDG_Init();
   /* USER CODE BEGIN 2 */
   HAL_GPIO_WritePin(RELAY_1_GPIO_Port, RELAY_1_Pin, GPIO_PIN_SET);
-
-
+uint8_t  buf[10];
+while(1)
+  data_get(buf,0,10);
 	//setCoef(1,0x0);
 
 //	setCoef(1,0x100);
@@ -326,11 +327,11 @@ int main(void){
   /* Create the timer(s) */
   /* definition and creation of myTimerBUT2 */
   osTimerStaticDef(myTimerBUT2, myTimeCallbackBUT2, &myTimerBUT2ControlBlock);
-  myTimerBUT2Handle = osTimerCreate(osTimer(myTimerBUT2), osTimerPeriodic, NULL);
+  myTimerBUT2Handle = osTimerCreate(osTimer(myTimerBUT2), osTimerOnce, NULL);
 
   /* definition and creation of myTimerBUT1 */
   osTimerStaticDef(myTimerBUT1, myTimerCalbakBUT1, &myTimerBUT1ControlBlock);
-  myTimerBUT1Handle = osTimerCreate(osTimer(myTimerBUT1), osTimerPeriodic, NULL);
+  myTimerBUT1Handle = osTimerCreate(osTimer(myTimerBUT1), osTimerOnce, NULL);
 
   /* USER CODE BEGIN RTOS_TIMERS */
   /* start timers, add new ones, ... */
@@ -968,7 +969,7 @@ static void MX_TIM8_Init(void)
   htim8.Instance = TIM8;
   htim8.Init.Prescaler = 42000;
   htim8.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim8.Init.Period = 20;
+  htim8.Init.Period = 25;
   htim8.Init.ClockDivision = TIM_CLOCKDIVISION_DIV4;
   htim8.Init.RepetitionCounter = 0;
   if (HAL_TIM_Base_Init(&htim8) != HAL_OK)
@@ -1217,10 +1218,10 @@ void Screen::display(){
 				SC39_show( SignalChenal::getInstance(&hadc2)->getVelocity(), true );
 				break;
 			case 2:
-				SC39_show( SignalChenal::getInstance(&hadc1)->getAccelerarion() );
+				SC39_show( SignalChenal::getInstance(&hadc1)->getAcceleration() );
 				break;
 			case 3:
-				SC39_show( SignalChenal::getInstance(&hadc2)->getAccelerarion(), true );
+				SC39_show( SignalChenal::getInstance(&hadc2)->getAcceleration(), true );
 				break;
 		}
 	}
@@ -1474,8 +1475,8 @@ void StartDefaultTask(void const * argument)
   for(;;)
   {
 
-	screen.display();
-    osDelay(10);
+	menu.display();
+    osDelay(100);
 
 
   }
@@ -1676,9 +1677,13 @@ void StartTaskModbus(void const * argument)
 void myTimeCallbackBUT2(void const * argument)
 {
 
+
   /* USER CODE BEGIN myTimeCallbackBUT2 */
-	osTimerStop(myTimerBUT2Handle);
-	switch(screen.getCurPos()){
+	//if(osOK != osTimerStop(myTimerBUT2Handle)){
+//		 Error_Handler();
+//	}
+	menu.switchCH();
+	/*switch(screen.getCurPos()){
 		case 0:
 		case 2: 	screen.moveCurPos(1);
 	break;
@@ -1697,8 +1702,28 @@ void myTimerCalbakBUT1(void const * argument)
 {
 
 	/* USER CODE BEGIN myTimerCalbakBUT1 */
-	osTimerStop(myTimerBUT1Handle);
-	switch(screen.getCurPos()){
+
+
+
+ if (but1pressed > 10){
+	//	if(osOK != osTimerStop(myTimerBUT1Handle)){
+	//		 Error_Handler();
+//		}
+		menu.enterExitSetting();
+		but1pressed=0;
+		return;
+	}
+	but1pressed++;
+	if ( GPIO_PIN_RESET == HAL_GPIO_ReadPin( BUT1_GPIO_Port, BUT1_Pin ) ){
+
+	if(osOK != osTimerStart(myTimerBUT1Handle, 100)){
+			 Error_Handler();
+		}
+
+	}
+	else
+		but1pressed = 0;
+/*	switch(screen.getCurPos()){
 		case 0:
 		case 1: 	screen.moveCurPos(2);
 	break;
@@ -1733,3 +1758,4 @@ void assert_failed(uint8_t *file, uint32_t line)
 #endif /* USE_FULL_ASSERT */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
+

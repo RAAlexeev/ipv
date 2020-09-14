@@ -33,7 +33,7 @@ public:
 	inline float32_t getVelocity(){
 		return velocity_.average();
 	}
-	inline float32_t getAccelerarion(){
+	inline float32_t getAcceleration(){
 		return acceleration_.average();
 	}
 	static SignalChenal* getInstance(void* hadc){

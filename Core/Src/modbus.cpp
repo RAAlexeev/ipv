@@ -34,9 +34,9 @@ inline uint16_t mb_reg(uint32_t index, uint16_t value=0 ){
 	}b;
 
 	switch(index){
-		case 1: b.f = SignalChenal::getInstance(ADC1)->getAccelerarion();
+		case 1: b.f = SignalChenal::getInstance(ADC1)->getAcceleration();
 			return (uint16_t)(b.ui>>16);
-		case 2: b.f = SignalChenal::getInstance(ADC1)->getAccelerarion();
+		case 2: b.f = SignalChenal::getInstance(ADC1)->getAcceleration();
 			return (uint16_t)(b.ui);
 
 		case 3: b.f = SignalChenal::getInstance(ADC1)->getVelocity();
@@ -44,14 +44,14 @@ inline uint16_t mb_reg(uint32_t index, uint16_t value=0 ){
 		case 4: b.f = SignalChenal::getInstance(ADC1)->getVelocity();
 			return (uint16_t)(b.ui);
 
-		case 5: b.f = SignalChenal::getInstance(ADC1)->getAccelerarion();
+		case 5: b.f = SignalChenal::getInstance(ADC2)->getAcceleration();
 			return (uint16_t)(b.ui>>16);
-		case 6: b.f = SignalChenal::getInstance(ADC1)->getAccelerarion();
+		case 6: b.f = SignalChenal::getInstance(ADC2)->getAcceleration();
 			return (uint16_t)(b.ui);
 
-		case 7: b.f = SignalChenal::getInstance(ADC1)->getVelocity();
+		case 7: b.f = SignalChenal::getInstance(ADC2)->getVelocity();
 			return (uint16_t)(b.ui>>16);
-		case 8: b.f = SignalChenal::getInstance(ADC1)->getVelocity();
+		case 8: b.f = SignalChenal::getInstance(ADC2)->getVelocity();
 			return (uint16_t)(b.ui);
 	}
 }

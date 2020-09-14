@@ -57,30 +57,16 @@ public:
 
 	};
 
-	template<typename T = uint16_t, int LENAREA = 32> class VarEE {
+	template<typename T = uint16_t, int LENAREA = 32>
+	class  VarEE {
 
 		// T value = 0;
 
 		const uint16_t addr;
 		uint16_t _index;
 		VarEE *copy1, *copy2;
-		T _get(bool force = false) const {
-			if (value != 0 && !force)
-				return value;
-			T ret = static_cast<T>(0xFFFFFFFF);
-			T buf[LENAREA / sizeof(T)];
 
-			while (!data_get(buf, addr, LENAREA)) {
-			};
-
-			ret = buf[0];
-			for (volatile uint16_t i = 1; i < LENAREA / sizeof(T); i++) {
-				ret ^= buf[i];
-			}
-
-			return ret;
-		}
-
+		T _get(bool force = false)const;
 		void _set(T _val) {
 
 			if ((value == _val) && (value || get() == _val))
@@ -119,30 +105,11 @@ public:
 			return _val;
 		}
 
-		T get(bool force = false) const {
-			T res = _get(force);
+		T get() const ;
 
-			if (copy1 != NULL) {
-				T res1 = copy1->get(force);
-				if (res == res1)
-					return res;
-				else if (copy2 != NULL) {
-					T res2 = copy1->get(force);
-					if (res == res2)
-						return res;
-					else if (res1 == res2 && res < res1)
-						return res;
-					else
-						return (res1 < res2) ? res1 : res2;
-				}
 
-			}
-			return res;
+		T operator()();
 
-		}
-		T operator()(bool force = false) {
-			return get(force);
-		}
 	};
 
 public:
