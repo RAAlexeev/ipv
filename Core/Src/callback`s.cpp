@@ -3,7 +3,7 @@
 #include "stm32f4xx_hal.h"
 #include "cmsis_os.h"
 #include "integrator.hpp"
-
+#include "Menu.hpp"
 extern osSemaphoreId myCountingSemBUT1Handle, myCountingSem_S01Handle, myCountingSem_S02Handle, myCountingSemBUT2Handle, myCountingSemTIM4Handle;
 extern osTimerId myTimerBUT1Handle, myTimerBUT2Handle;
 extern  void my_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc);
@@ -18,26 +18,30 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
         if ( GPIO_PIN_RESET == HAL_GPIO_ReadPin( BUT1_GPIO_Port, BUT1_Pin ) )
          {
               
-               osTimerStart(myTimerBUT1Handle, 100 );
+               osTimerStart(myTimerBUT1Handle, 30 );
 
          } else{
+
            	 extern uint8_t but1pressed;
+
            	 but1pressed = 0;
-
            	 osTimerStop(myTimerBUT1Handle);
-
          }
-          
      break;
+
      case BUT2_Pin:
          if ( GPIO_PIN_RESET == HAL_GPIO_ReadPin( BUT2_GPIO_Port, BUT2_Pin ) )
          {
-            osTimerStart(myTimerBUT2Handle, 100 );          
+            osTimerStart(myTimerBUT2Handle, 30 );
            
          } else{
            	 osTimerStop(myTimerBUT2Handle);
-          // 	 extern uint8_t but2pressed;
-           //	 but2pressed = 0;
+           	 extern uint8_t but2pressed;
+           	 if( but2pressed > 0 && but2pressed <5 )
+        	   menu.switchCH_edit();
+
+
+           	 but2pressed = 0;
          }
            
        // osSemaphoreRelease(myCountingSemBUT1Handle);

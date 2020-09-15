@@ -114,9 +114,9 @@ osSemaphoreId myCountingSemMBhandle;
 osStaticSemaphoreDef_t myCountingSemMBcontrolBlock;
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-uint8_t	but1pressed = 0;
+uint8_t	but1pressed = 0, but2pressed = 0;
  SignalChenal SignalChenal::instances[]={SignalChenal(),SignalChenal()};
- //Menu menu= Menu({});
+ EEPROM_t EEPROM=EEPROM_t();
  void PWM(float  velocity, float min, float max);
 /* USER CODE END PV */
 
@@ -157,16 +157,17 @@ void myTimerCalbakBUT1(void const * argument);
 /* USER CODE BEGIN 0 */
 
 
-inline void delay(uint32_t ms){
+void delay(uint32_t ms){
 	osDelay(ms);
 }
- void _Error_Handler(const char *f, const uint16_t l){
-	 for(;;);
- }
 
- int __io_putchar(int ch){
+void _Error_Handler(const char *f, const uint16_t l){
+	 for(;;);
+}
+
+int __io_putchar(int ch){
 	return ITM_SendChar((ch));
- }
+}
 
  void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart){
 
@@ -204,6 +205,8 @@ inline void delay(uint32_t ms){
   */
 int main(void){
   /* USER CODE BEGIN 1 */
+	__HAL_DBGMCU_FREEZE_TIM2();
+	__HAL_DBGMCU_FREEZE_IWDG();
 
 	//uint32_t *ACTLR = (uint32_t *)0xE000E008;
 	//*ACTLR |= 2;
@@ -247,10 +250,9 @@ int main(void){
  // MX_IWDG_Init();
   //MX_WWDG_Init();
   /* USER CODE BEGIN 2 */
-  HAL_GPIO_WritePin(RELAY_1_GPIO_Port, RELAY_1_Pin, GPIO_PIN_SET);
-uint8_t  buf[10];
-while(1)
-  data_get(buf,0,10);
+
+  EEPROM.init();
+
 	//setCoef(1,0x0);
 
 //	setCoef(1,0x100);
@@ -1156,6 +1158,9 @@ static void MX_GPIO_Init(void)
                           |E_Pin|F_Pin|G_Pin|DP_Pin
 						  |HG_1_Pin|HG_2_Pin, GPIO_PIN_RESET);
 
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(WC_GPIO_Port, WC_Pin, GPIO_PIN_RESET);
+
   /*Configure GPIO pins : SENS2_FAIL_Pin SENS1_FAIL_Pin */
   GPIO_InitStruct.Pin = SENS2_FAIL_Pin|SENS1_FAIL_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
@@ -1164,7 +1169,7 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pins : RELAY_1_Pin RELAY_2_Pin */
   GPIO_InitStruct.Pin = RELAY_1_Pin|RELAY_2_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
@@ -1203,6 +1208,14 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(U1_DE_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : WC_Pin */
+  GPIO_InitStruct.Pin = WC_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(WC_GPIO_Port, &GPIO_InitStruct);
+
   /* EXTI interrupt init*/
   HAL_NVIC_SetPriority(EXTI15_10_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
@@ -1467,7 +1480,7 @@ void StartDefaultTask(void const * argument)
 		  };
 		  /* Enable the TIM Update DMA request */
 
-		  SC39_show(0);
+
 		  //HAL_GPIO_WritePin(HG_1_GPIO_Port,HG_1_Pin,GPIO_PIN_SET);
 		  //HAL_GPIO_WritePin(A_GPIO_Port,A_Pin,GPIO_PIN_SET);
    //menuInit();
@@ -1476,7 +1489,7 @@ void StartDefaultTask(void const * argument)
   {
 
 	menu.display();
-    osDelay(100);
+    osDelay(300);
 
 
   }
@@ -1664,7 +1677,7 @@ void StartTaskModbus(void const * argument)
 			 }
 			  HAL_UART_DMAStop( &huart1 );
 
-			  uint32_t cnt =256 -	__HAL_DMA_GET_COUNTER(huart1.hdmarx)+1;
+			  uint32_t cnt =256 - __HAL_DMA_GET_COUNTER(huart1.hdmarx)+1;
 
 			ModBusParse(cnt);
     
@@ -1682,7 +1695,32 @@ void myTimeCallbackBUT2(void const * argument)
 	//if(osOK != osTimerStop(myTimerBUT2Handle)){
 //		 Error_Handler();
 //	}
-	menu.switchCH();
+	if (menu.doubleBtn(but1pressed, but2pressed)) {
+		if(osOK != osTimerStart(myTimerBUT2Handle, 200)){
+				 Error_Handler();
+			};
+		return;
+	}
+
+
+
+	if (but2pressed > 20){
+			menu.navigate();
+			but1pressed=0;
+			return;
+		}
+		but2pressed++;
+		if ( GPIO_PIN_RESET == HAL_GPIO_ReadPin( BUT2_GPIO_Port, BUT2_Pin ) ){
+
+		if(osOK != osTimerStart(myTimerBUT2Handle, 100)){
+				 Error_Handler();
+			}
+
+		}
+		else{
+
+			but1pressed = 0;
+		}
 	/*switch(screen.getCurPos()){
 		case 0:
 		case 2: 	screen.moveCurPos(1);
@@ -1703,9 +1741,15 @@ void myTimerCalbakBUT1(void const * argument)
 
 	/* USER CODE BEGIN myTimerCalbakBUT1 */
 
+	if (menu.doubleBtn(but1pressed,but2pressed)){
+		if(osOK != osTimerStart(myTimerBUT1Handle, 200)){
+				 Error_Handler();
+			}
+		return;
 
-
- if (but1pressed > 10){
+	}
+	if(but1pressed==1)menu.navigate(true);
+	if (but1pressed > 20){
 	//	if(osOK != osTimerStop(myTimerBUT1Handle)){
 	//		 Error_Handler();
 //		}

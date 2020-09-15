@@ -8,7 +8,7 @@
 #ifndef EEPROM_HPP_
 #define EEPROM_HPP_
 
-#include "main.h"
+
 #include"myUtils.hpp"
 
 extern I2C_HandleTypeDef hi2c1;
@@ -114,13 +114,15 @@ public:
 
 public:
 
-	VarEE<uint8_t> porog11 = VarEE<uint8_t>();
-	VarEE<uint8_t> porog12 = VarEE<uint8_t>();
-	VarEE<uint8_t> porog21 = VarEE<uint8_t>();
-	VarEE<uint8_t> porog22 = VarEE<uint8_t>();
-	VarEE<uint8_t> range1 = VarEE<uint8_t>();
-	VarEE<uint8_t> range2 = VarEE<uint8_t>();
+	VarEE<uint16_t> porog11 = VarEE<uint16_t>();
+	VarEE<uint16_t> porog12 = VarEE<uint16_t>();
+	VarEE<uint16_t> porog21 = VarEE<uint16_t>();
+	VarEE<uint16_t> porog22 = VarEE<uint16_t>();
+	VarEE<uint16_t> range1 = VarEE<uint16_t>();
+	VarEE<uint16_t> range2 = VarEE<uint16_t>();
+	void init(){
 
+	};
 	inline void reset(void) {
 		porog11.set(0);
 	}

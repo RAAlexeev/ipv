@@ -74,9 +74,13 @@ inline uint8_t getDig(float32_t val, int8_t dig){
 	return static_cast<uint8_t>(static_cast<uint32_t>(val)/pow10 % 10);
 }
 
-void SC39_show(float32_t val, bool ch) {
+static struct{bool d1, d2;} strob;
+
+
+void SC39_show(float32_t val, uint8_t strobe ) {
 
 	uint8_t d1, d2; //intPart = static_cast<uint8_t>(round(n*10)/10);
+
 	bool dot1=false,dot2=false;
 	val=round(val*10)/10;
 	if (val < 10) {
@@ -95,8 +99,22 @@ void SC39_show(float32_t val, bool ch) {
 		d2 = 'Ï';
 		dot2=true;
 	}
-	d1=SC39_get_dig(d1,dot1);
-	d2=SC39_get_dig(d2,dot2);
+
+	switch(strobe){
+	case 1: strob.d2 = !strob.d2;
+			strob.d1 = false;
+		break;
+	case 2: strob.d1 = !strob.d1;
+			strob.d2 = false;
+		break;
+	default:
+		strob.d1 = false;
+		strob.d2 = false;
+	};
+
+
+	d1=(strob.d1)?0:SC39_get_dig(d1,dot1);
+	d2=(strob.d2)?0:SC39_get_dig(d2,dot2);
 	SC39_IO[0] = ((0x200 | ((uint8_t) ~d1)) << 16) | d1 | GPIO_BSRR_BS8;
 	SC39_IO[1] = ((0x100 | ((uint8_t) ~d2)) << 16) | d2 | GPIO_BSRR_BS9;
 }

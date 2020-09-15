@@ -8,6 +8,7 @@ Licensed under LGPL.
 #include "cmsis_os.h"
 #include "modbus.h"
 #include "integrator.hpp"
+#include "EEPROM.hpp"
 // If you want directly send to usb-cdc
 // #include "usbd_cdc_if.h"
 
@@ -27,33 +28,49 @@ uint8_t mb_buf_out[256];
 uint8_t mb_buf_out_count;
 
 
-inline uint16_t mb_reg(uint32_t index, uint16_t value=0 ){
+inline uint16_t mb_reg(uint32_t index, uint16_t value=0xFFFF ){
 	union fu_t{
 		float32_t f;
 		uint32_t ui;
 	}b;
-
+if(value==0xFFFF)
 	switch(index){
-		case 1: b.f = SignalChenal::getInstance(ADC1)->getAcceleration();
+
+
+		case 10: return EEPROM.porog11();
+		case 11: return EEPROM.porog12();
+		case 12: return EEPROM.range1();
+		case 13: return EEPROM.porog21();
+		case 14: return EEPROM.porog22();
+		case 15: return EEPROM.range2();
+		case 16: b.f = SignalChenal::getInstance(ADC1)->getAcceleration();
 			return (uint16_t)(b.ui>>16);
-		case 2: b.f = SignalChenal::getInstance(ADC1)->getAcceleration();
+		case 17: b.f = SignalChenal::getInstance(ADC1)->getAcceleration();
 			return (uint16_t)(b.ui);
 
-		case 3: b.f = SignalChenal::getInstance(ADC1)->getVelocity();
+		case 18: b.f = SignalChenal::getInstance(ADC1)->getVelocity();
 			return (uint16_t)(b.ui>>16);
-		case 4: b.f = SignalChenal::getInstance(ADC1)->getVelocity();
+		case 19: b.f = SignalChenal::getInstance(ADC1)->getVelocity();
 			return (uint16_t)(b.ui);
 
-		case 5: b.f = SignalChenal::getInstance(ADC2)->getAcceleration();
+		case 20: b.f = SignalChenal::getInstance(ADC2)->getAcceleration();
 			return (uint16_t)(b.ui>>16);
-		case 6: b.f = SignalChenal::getInstance(ADC2)->getAcceleration();
+		case 21: b.f = SignalChenal::getInstance(ADC2)->getAcceleration();
 			return (uint16_t)(b.ui);
 
-		case 7: b.f = SignalChenal::getInstance(ADC2)->getVelocity();
+		case 22: b.f = SignalChenal::getInstance(ADC2)->getVelocity();
 			return (uint16_t)(b.ui>>16);
-		case 8: b.f = SignalChenal::getInstance(ADC2)->getVelocity();
+		case 23: b.f = SignalChenal::getInstance(ADC2)->getVelocity();
 			return (uint16_t)(b.ui);
+	}else switch(index){
+		case 10: return EEPROM.porog11.set(value);
+		case 11: return EEPROM.porog12.set(value);
+		case 12: return EEPROM.range1.set(value);
+		case 13: return EEPROM.porog21.set(value);
+		case 14: return EEPROM.porog22.set(value);
+		case 15: return EEPROM.range2.set(value);
 	}
+
 }
 /*
 void ModBusTask( const * argument)
@@ -172,9 +189,9 @@ void ModBusParse(uint8_t  count)
             }
             else
               { // ATTN : skip num_bytes
-              for(i=st;i<nu;i++)
+              for(i=st;i<st+nu;i++)
                 {
-                  mb_reg(i,mb_buf_in[7+i*2]*256+mb_buf_in[8+i*2]);
+                  mb_reg(i,mb_buf_in[7+i-st]*256+mb_buf_in[8+i-st]);
                 }
               mb_buf_out[mb_buf_out_count++]=mb_addr;
               mb_buf_out[mb_buf_out_count++]=func;

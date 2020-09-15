@@ -35,8 +35,8 @@ ENTRY(Reset_Handler)
 //_estack = 0x20020000;    /* end of RAM */
 _estack = 0x10010000;    /* end of CCMRAM */
 /* Generate a link error if heap and stack don't fit into RAM */
-_Min_Heap_Size = 0x400;      /* required amount of heap  */
-_Min_Stack_Size = 0x400; /* required amount of stack */
+_Min_Heap_Size = 0x100;      /* required amount of heap  */
+_Min_Stack_Size = 0x100; /* required amount of stack */
 
 /* Specify the memory areas */
 MEMORY
@@ -124,7 +124,7 @@ SECTIONS
 
     . = ALIGN(4);
     _edata = .;        /* define a global symbol at data end */
-  } >RAM AT> FLASH
+  } >CCMRAM AT> FLASH
 
   _siccmram = LOADADDR(.ccmram);
 

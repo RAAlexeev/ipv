@@ -133,6 +133,8 @@ extern uint8_t mb_buf_in[256];
 #define DP_GPIO_Port GPIOD
 #define U1_DE_Pin GPIO_PIN_5
 #define U1_DE_GPIO_Port GPIOB
+#define WC_Pin GPIO_PIN_0
+#define WC_GPIO_Port GPIOE
 /* USER CODE BEGIN Private defines */
 #define Error_Handler()_Error_Handler(__FILE__,__LINE__);
 /* USER CODE END Private defines */

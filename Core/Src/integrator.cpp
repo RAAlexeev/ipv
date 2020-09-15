@@ -62,7 +62,6 @@ void SignalChenal::calc() {
 //	_DEBUG(myUtils::ITM_SendStr(getInstance(&hadc1)==this?"1":"2"));
 	//uint16_t *srcInt = static_cast<uint16_t *>( _src);
 	float *src=buffer;
-	swBuffer();
 
 
  //   if ( HAL_OK != HAL_ADC_Start_DMA( &instances[0]==this?&hadc1:&hadc2, (uint32_t *)(swBuffer()), LEN ))
@@ -91,7 +90,7 @@ void SignalChenal::calc() {
 //}
 	static  float32_t  bufOut_f32_1[LEN] __attribute__((section(".ccmram")));
 	static  float32_t  bufOut_f32_2[LEN] __attribute__((section(".ccmram")));
-	float32_t* bufOut_f32 = this==&instances[0]?bufOut_f32_1:bufOut_f32_2;
+	float32_t* bufOut_f32 = (this==&instances[0])?bufOut_f32_1:bufOut_f32_2;
 	//for(uint16_t j=0;j < LEN/8 ;j++){
 	//taskENTER_CRITICAL();
 

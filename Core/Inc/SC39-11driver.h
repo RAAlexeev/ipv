@@ -10,7 +10,7 @@
 
 #include "main.h"
 #include "arm_math.h"
-void SC39_show( float32_t n, bool ch = false );
+void SC39_show( float32_t n, uint8_t strobe = 0 );
 
 
 
