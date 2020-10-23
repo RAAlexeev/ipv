@@ -113,7 +113,7 @@ public:
 	};
 
 public:
-
+	VarEE<uint16_t> pwd = VarEE<uint16_t>();
 	VarEE<uint16_t> porog11 = VarEE<uint16_t>();
 	VarEE<uint16_t> porog12 = VarEE<uint16_t>();
 	VarEE<uint16_t> porog21 = VarEE<uint16_t>();
@@ -121,32 +121,25 @@ public:
 	VarEE<uint16_t> range1 = VarEE<uint16_t>();
 	VarEE<uint16_t> range2 = VarEE<uint16_t>();
 	void init(){
-
+		if(ifThirstRun()){
+			reset();
+		}
 	};
 	inline void reset(void) {
+		pwd.set(15);
 		porog11.set(0);
+		porog12.set(0);
+		porog21.set(0);
+		porog22.set(0);
+		range1.set(200);
+		range2.set(200);
 	}
-	//	bool ifThirstRunInit();
-	/*{
-	 static uint16_t buf = 0;
-	 if (buf == 0xAAAB)
-	 return false;
-	 while (!data_get(&buf, 0)) {
-	 ;
-	 };
-	 if (buf == 0xAAAB)
-	 return false;
 
-	 reset();
+	bool ifThirstRun()
+	{
+		return pwd()!=15;
+	}
 
-	 buf = 0xAAAB;
-	 while (!data_put(0, buf)) {
-	 ;
-	 }
-
-	 return true;
-	 }
-	 */
 } EEPROM;
 
 #endif /* EEPROM_HPP_ */

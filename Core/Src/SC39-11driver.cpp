@@ -2,7 +2,7 @@
 #include "main.h"
 #include "SC39-11driver.h"
 
-__IO uint32_t SC39_IO[2] = { 0 };
+__IO uint32_t port_IO[3] = { 0 };
 
 uint16_t SC39_get_dig(uint8_t n, bool dot) {
 
@@ -115,8 +115,8 @@ void SC39_show(float32_t val, uint8_t strobe ) {
 
 	d1=(strob.d1)?0:SC39_get_dig(d1,dot1);
 	d2=(strob.d2)?0:SC39_get_dig(d2,dot2);
-	SC39_IO[0] = ((0x200 | ((uint8_t) ~d1)) << 16) | d1 | GPIO_BSRR_BS8;
-	SC39_IO[1] = ((0x100 | ((uint8_t) ~d2)) << 16) | d2 | GPIO_BSRR_BS9;
+	port_IO[0] = ((0x400 | ((uint8_t) ~d1)) << 16) | d1 | GPIO_BSRR_BS8;
+	port_IO[1] = ((0x100 | ((uint8_t) ~d2)) << 16) | d2 | GPIO_BSRR_BS9;
 }
 
 void ____SC39_showDig(uint8_t dig, GPIO_PinState dp, uint8_t hg) {

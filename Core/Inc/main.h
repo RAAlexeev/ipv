@@ -109,6 +109,8 @@ extern uint8_t mb_buf_in[256];
 #define HG_1_GPIO_Port GPIOD
 #define HG_2_Pin GPIO_PIN_9
 #define HG_2_GPIO_Port GPIOD
+#define HG_3_Pin GPIO_PIN_10
+#define HG_3_GPIO_Port GPIOD
 #define BUT2_Pin GPIO_PIN_15
 #define BUT2_GPIO_Port GPIOA
 #define BUT2_EXTI_IRQn EXTI15_10_IRQn

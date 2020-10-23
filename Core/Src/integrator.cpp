@@ -22,16 +22,10 @@ extern ADC_HandleTypeDef hadc2;
 void SignalChenal::HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
 	getInstance(hadc)->buffer = getInstance(hadc)->buffer1;
 	  osSemaphoreRelease((hadc == &hadc1)?myCountingSem_S01Handle:myCountingSem_S02Handle);
-
-	//	_DEBUG(myUtils::ITM_SendStr(( char*)((hadc->Instance == ADC1)?"\nS1":"\nS2")));
-	//	_DEBUG(myUtils::ITM_SendStr(( char*)((getInstance(hadc)->buffer==getInstance(hadc)->buffer1)?"-1\n":"-2\n")));
 }
 void SignalChenal::HAL_ADC_M1ConvCpltCallback(DMA_HandleTypeDef * 	hdma){
 	getInstance(hdma->Parent)->buffer = getInstance(hdma->Parent)->buffer2;
 	  osSemaphoreRelease((hdma->Parent == &hadc1)?myCountingSem_S01Handle:myCountingSem_S02Handle);
-
-	//	_DEBUG(myUtils::ITM_SendStr(( char*)((hadc->Instance == ADC1)?"\nS1":"\nS2")));
-	//	_DEBUG(myUtils::ITM_SendStr(( char*)((getInstance(hadc)->buffer==getInstance(hadc)->buffer1)?"-1\n":"-2\n")));
 }
 
 SignalChenal::SignalChenal(){

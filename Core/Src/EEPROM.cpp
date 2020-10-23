@@ -134,7 +134,7 @@ T EEPROM_t::VarEE<T,LENAREA>::get( ) const {
 
 template<typename T,int LENAREA>
 T EEPROM_t::VarEE<T,LENAREA>::operator()()  {
-	return get();
+	return value=get();
 }
 
 template class EEPROM_t::VarEE <uint16_t,32>;

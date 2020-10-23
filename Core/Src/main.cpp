@@ -1156,7 +1156,7 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOD, A_Pin|B_Pin|C_Pin|D_Pin 
                           |E_Pin|F_Pin|G_Pin|DP_Pin
-						  |HG_1_Pin|HG_2_Pin, GPIO_PIN_RESET);
+						  |HG_1_Pin|HG_2_Pin|HG_3_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(WC_GPIO_Port, WC_Pin, GPIO_PIN_RESET);
@@ -1196,7 +1196,7 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pins : A_Pin B_Pin C_Pin D_Pin 
                            E_Pin F_Pin G_Pin DP_Pin */
   GPIO_InitStruct.Pin = A_Pin|B_Pin|C_Pin|D_Pin 
-                          |E_Pin|F_Pin|G_Pin|DP_Pin|HG_1_Pin|HG_2_Pin;
+                          |E_Pin|F_Pin|G_Pin|DP_Pin|HG_1_Pin|HG_2_Pin|HG_3_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -1251,10 +1251,11 @@ void testMaxVelocity(float * velocity,uint8_t * tOut, float max , GPIO_TypeDef *
     } 
 }
 
-void PWM(float velocity, float min, float max)
+void PWM(float velocity,  float max)
 {
+	uint32_t ar =__HAL_TIM_GET_AUTORELOAD(&htim3);
+  uint16_t dutyCycle = (uint16_t)((velocity*(ar-ar/5)/(max)+ar/5)*0.9);
 
-  uint16_t dutyCycle = (uint16_t)(velocity*(0x9FFF)/(max-min));
 //	uint16_t dutyCycle= 0x00FF;
   __HAL_TIM_SET_COMPARE( &htim3, TIM_CHANNEL_1, dutyCycle );
 
@@ -1459,7 +1460,29 @@ const uint32_t BaudRate[] = {115200, 4800, 9600, 19200, 38400, 57600, 115200};
   * @retval None
   */
 //uint32_t	runCnt = 0;
+static uint8_t  testVelocity (float32_t v,float32_t porog1, float32_t porog2){
+uint8_t ret;
+	static uint32_t delay = 0X5F;
 
+					if(delay)delay--;
+					else{ if(porog1 != 0 &&( v > porog1 )){
+					 		  HAL_GPIO_WritePin(RELAY_1_GPIO_Port, RELAY_1_Pin, GPIO_PIN_SET);
+					 	 ret=(1<<4);//led(4,false,false);
+					 	 }else if( v < (porog1 - v/10)){
+					 		 	 HAL_GPIO_WritePin(RELAY_1_GPIO_Port, RELAY_1_Pin, GPIO_PIN_RESET);
+					 		 	}
+
+					 	 if(porog2 != 0 &&( v > porog2 )){
+						 	 HAL_GPIO_WritePin(RELAY_2_GPIO_Port, RELAY_2_Pin, GPIO_PIN_SET);
+					 		ret|=(1<<5);//led(4,false,false);
+						 }else if( v < (porog2 - v/10)){
+						 		 HAL_GPIO_WritePin(RELAY_2_GPIO_Port, RELAY_2_Pin, GPIO_PIN_RESET);
+
+						 	 	}
+					};
+
+return ret;
+};
 /* USER CODE END Header_StartDefaultTask */
 
 
@@ -1467,8 +1490,8 @@ void StartDefaultTask(void const * argument)
 {
 
   /* USER CODE BEGIN 5 */
-	extern uint32_t SC39_IO[2];
-	if(HAL_DMA_Start( &hdma_tim8_up, (uint32_t)&SC39_IO, (uint32_t)&GPIOD->BSRR, 2 ) != HAL_OK)
+	extern uint32_t port_IO[3];
+	if(HAL_DMA_Start( &hdma_tim8_up, (uint32_t)&port_IO, (uint32_t)&GPIOD->BSRR, 3 ) != HAL_OK)
 	{
    		    _Error_Handler(__FILE__, __LINE__);
     };
@@ -1488,10 +1511,22 @@ void StartDefaultTask(void const * argument)
   for(;;)
   {
 
-	menu.display();
-    osDelay(300);
+
+	  uint8_t msk;
+	  msk=testVelocity( SignalChenal::getInstance(ADC1)->getVelocity(), (float32_t)EEPROM.porog11.get()/10, (float32_t)EEPROM.porog12.get()/10);
+	  msk|=testVelocity( SignalChenal::getInstance(ADC2)->getVelocity(), (float32_t)EEPROM.porog21.get()/10, (float32_t)EEPROM.porog22.get()/10);
+	  if(!menu.isEdit)
+		  scale(SignalChenal::getInstance( ( (menu.getNch()==1)?ADC1:ADC2) )->getVelocity()*1000/( (menu.getNch()==1)?EEPROM.range1():EEPROM.range2() ),msk,  [](uint16_t ms){osDelay(ms);});
 
 
+
+	  if(SignalChenal::getInstance(ADC1)->getVelocity() > SignalChenal::getInstance(ADC2)->getVelocity()){
+		PWM(SignalChenal::getInstance(ADC1)->getVelocity(),EEPROM.range1()/10);
+	  }else PWM(SignalChenal::getInstance(ADC2)->getVelocity(),EEPROM.range2()/10);
+
+	  menu.display();
+
+	  osDelay(300);
   }
   
   /* USER CODE END 5 */ 
