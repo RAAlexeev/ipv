@@ -138,3 +138,4 @@ T EEPROM_t::VarEE<T,LENAREA>::operator()()  {
 }
 
 template class EEPROM_t::VarEE <uint16_t,32>;
+template class EEPROM_t::VarEE <int16_t,32>;

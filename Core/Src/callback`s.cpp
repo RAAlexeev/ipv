@@ -4,14 +4,16 @@
 #include "cmsis_os.h"
 #include "integrator.hpp"
 #include "Menu.hpp"
+
 extern osSemaphoreId myCountingSemBUT1Handle, myCountingSem_S01Handle, myCountingSem_S02Handle, myCountingSemBUT2Handle, myCountingSemTIM4Handle;
 extern osTimerId myTimerBUT1Handle, myTimerBUT2Handle;
 extern  void my_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc);
 extern UART_HandleTypeDef huart1;
+extern uint8_t service;
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
  {
-  
+	 extern uint8_t but1pressed;
    switch( GPIO_Pin )
    {
      case BUT1_Pin:
@@ -20,10 +22,13 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
               
                osTimerStart(myTimerBUT1Handle, 30 );
 
-         } else{
+         } else if( but1pressed > 0 && but1pressed  < 5 ){//кнопка была нажата боле 30мс и  отпущена{
 
-           	 extern uint8_t but1pressed;
 
+        	if(service && service < 5)
+       			  service++;
+       		else if(service)
+       			  serviceMenu.minus();
            	 but1pressed = 0;
            	 osTimerStop(myTimerBUT1Handle);
          }
@@ -34,13 +39,21 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
          {
             osTimerStart(myTimerBUT2Handle, 30 );
            
-         } else{
-           	 osTimerStop(myTimerBUT2Handle);
+         } else{ //кнопка была отпущена
+           	 osTimerStop(myTimerBUT2Handle);//
            	 extern uint8_t but2pressed;
-           	 if( but2pressed > 0 && but2pressed <5 )
-        	   menu.switchCH_edit();
 
 
+           	 if( but2pressed > 0 && but2pressed < 5 ){//кнопка была нажата боле 30мс и  отпущена
+        	  if(!service)
+        		  menu.switchCH_edit();
+        	  else{
+        		  if(service < 5)
+        			  service++;
+        		  else
+        			  serviceMenu.plus();
+        	  }
+           	 }
            	 but2pressed = 0;
          }
            

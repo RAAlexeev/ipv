@@ -1,12 +1,14 @@
 /* SC39-11 driver */
 #include "main.h"
 #include "SC39-11driver.h"
-
+#include <cmath>
 __IO uint32_t port_IO[3] = { 0 };
 
 uint16_t SC39_get_dig(uint8_t n, bool dot) {
 
 	switch (n) {
+	case'-':
+		return ( G_Pin | (dot ? DP_Pin : 0));
 	case 1:
 		return (B_Pin | C_Pin | (dot ? DP_Pin : 0));
 
@@ -83,9 +85,10 @@ void SC39_show(float32_t val, uint8_t strobe ) {
 
 	bool dot1=false,dot2=false;
 	val=round(val*10)/10;
+
 	if (val < 10) {
-		d1=	getDig(val*10,1);
-		d2 = getDig(val*10,0);//round((n - intPart) * 10);
+		d1=	(val < 0)?'-':getDig(val*10,1);
+		d2 = getDig(std::abs(val)*10,0);//round((n - intPart) * 10);
 		dot1=true;
 	} else if (val < 100) {
 		d1=	getDig(val,1);

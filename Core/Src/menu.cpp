@@ -8,10 +8,27 @@
 #include "EEPROM.hpp"
 #include "integrator.hpp"
 #include "SC39-11driver.h"
+
 Screen screen;
 
-uint16_t varOffset = 0;
 
+uint8_t ServiceMenu::curCH=0;
+
+
+MenuItem  ServiceMenu::items[]={
+			 MenuItem(
+					 [](){ return  (float32_t)EEPROM.kA4_20()/10;}
+			 	 	,[](float32_t v){ EEPROM.kA4_20.set(round(v*10)); }
+			 	 	,0,0,-100
+			 	 	 ),
+			 MenuItem(
+					 [](){ return  (float32_t)EEPROM.kB4_20()/10;}
+			 	 	,[](float32_t v){ EEPROM.kB4_20.set(round(v*10)); }
+			 	 	,7,0,-100
+			 )
+};
+
+ServiceMenu serviceMenu=ServiceMenu(sizeof(ServiceMenu::items)/sizeof(MenuItem));
 
 MenuItem  Menu::items[]={
 			 MenuItem(
@@ -70,8 +87,15 @@ MenuItem  Menu::items[]={
 
 Menu menu=Menu(sizeof(Menu::items)/sizeof(MenuItem));
 
-void Menu::display(){
 
-		SC39_show(getCurentItem()->getValue( curIndex < 3 ),digPos);
+
+void Menu::display(){
+	SC39_show(getCurentItem()->getValue( curIndex < 3 ), digPos);
+	firstRun();
+}
+void ServiceMenu::display(){
+	firstRun();
+		SC39_show(getCurentItem()->getValue(false), 0);
 
 }
+

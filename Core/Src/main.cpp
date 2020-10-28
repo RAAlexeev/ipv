@@ -114,7 +114,8 @@ osSemaphoreId myCountingSemMBhandle;
 osStaticSemaphoreDef_t myCountingSemMBcontrolBlock;
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-uint8_t	but1pressed = 0, but2pressed = 0;
+
+uint8_t	but1pressed = 0, but2pressed = 0,  service = 0;
  SignalChenal SignalChenal::instances[]={SignalChenal(),SignalChenal()};
  EEPROM_t EEPROM=EEPROM_t();
  void PWM(float  velocity, float min, float max);
@@ -231,6 +232,7 @@ int main(void){
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+
   MX_DMA_Init();
   MX_ADC1_Init();
   MX_ADC2_Init();
@@ -253,6 +255,8 @@ int main(void){
 
   EEPROM.init();
 
+  if (( GPIO_PIN_RESET == HAL_GPIO_ReadPin( BUT1_GPIO_Port, BUT1_Pin ) )&&( GPIO_PIN_RESET == HAL_GPIO_ReadPin( BUT2_GPIO_Port, BUT2_Pin ) ))
+	  service++;
 	//setCoef(1,0x0);
 
 //	setCoef(1,0x100);
@@ -1251,10 +1255,11 @@ void testMaxVelocity(float * velocity,uint8_t * tOut, float max , GPIO_TypeDef *
     } 
 }
 
-void PWM(float velocity,  float max)
+void PWM(float32_t velocity,  uint16_t max)
 {
 	uint32_t ar =__HAL_TIM_GET_AUTORELOAD(&htim3);
-  uint16_t dutyCycle = (uint16_t)((velocity*(ar-ar/5)/(max)+ar/5)*0.9);
+	float32_t dc = velocity*(ar-ar/5)/(10*max)+ar*serviceMenu.items[1].getValue(false)/200;
+  uint16_t dutyCycle = (uint16_t)(dc+ar/5+ar*serviceMenu.items[0].getValue(false)/200);
 
 //	uint16_t dutyCycle= 0x00FF;
   __HAL_TIM_SET_COMPARE( &htim3, TIM_CHANNEL_1, dutyCycle );
@@ -1507,24 +1512,37 @@ void StartDefaultTask(void const * argument)
 		  //HAL_GPIO_WritePin(HG_1_GPIO_Port,HG_1_Pin,GPIO_PIN_SET);
 		  //HAL_GPIO_WritePin(A_GPIO_Port,A_Pin,GPIO_PIN_SET);
    //menuInit();
+
+		static uint16_t tout = 0xF;
   /* Infinite loop */
   for(;;)
   {
 
+	  if(service >= 5){
 
-	  uint8_t msk;
-	  msk=testVelocity( SignalChenal::getInstance(ADC1)->getVelocity(), (float32_t)EEPROM.porog11.get()/10, (float32_t)EEPROM.porog12.get()/10);
-	  msk|=testVelocity( SignalChenal::getInstance(ADC2)->getVelocity(), (float32_t)EEPROM.porog21.get()/10, (float32_t)EEPROM.porog22.get()/10);
-	  if(!menu.isEdit)
-		  scale(SignalChenal::getInstance( ( (menu.getNch()==1)?ADC1:ADC2) )->getVelocity()*1000/( (menu.getNch()==1)?EEPROM.range1():EEPROM.range2() ),msk,  [](uint16_t ms){osDelay(ms);});
+		  serviceMenu.display();
+		  PWM(serviceMenu.getCurentIndex()?(serviceMenu.curCH?EEPROM.range1():EEPROM.range2()):0,(serviceMenu.curCH?EEPROM.range1():EEPROM.range2())/10);
+	  } else if(service==0||tout==0){
+		  if(tout==0){
+				led(6,false);
+				led(7,true);
+				led(2,true);
+				led(3,false);
+				tout=0xf;
+				service=0;
+		  }
+		  uint8_t msk;
+		  msk=testVelocity( SignalChenal::getInstance(ADC1)->getVelocity(), (float32_t)EEPROM.porog11.get()/10, (float32_t)EEPROM.porog12.get()/10);
+		  msk|=testVelocity( SignalChenal::getInstance(ADC2)->getVelocity(), (float32_t)EEPROM.porog21.get()/10, (float32_t)EEPROM.porog22.get()/10);
+		  if(!menu.isEdit)
+			  scale(SignalChenal::getInstance( ( (menu.getNch()==1)?ADC1:ADC2) )->getVelocity()*1000/( (menu.getNch()==1)?EEPROM.range1():EEPROM.range2() ),msk,  [](uint16_t ms){osDelay(ms);});
 
-
-
-	  if(SignalChenal::getInstance(ADC1)->getVelocity() > SignalChenal::getInstance(ADC2)->getVelocity()){
-		PWM(SignalChenal::getInstance(ADC1)->getVelocity(),EEPROM.range1()/10);
-	  }else PWM(SignalChenal::getInstance(ADC2)->getVelocity(),EEPROM.range2()/10);
-
-	  menu.display();
+		  if(SignalChenal::getInstance(ADC1)->getVelocity() > SignalChenal::getInstance(ADC2)->getVelocity()){
+			PWM(SignalChenal::getInstance(ADC1)->getVelocity(),EEPROM.range1()/10);
+		  }else PWM(SignalChenal::getInstance(ADC2)->getVelocity(),EEPROM.range2()/10);
+		  menu.display();
+	  }else
+	  --tout;
 
 	  osDelay(300);
   }
@@ -1730,7 +1748,7 @@ void myTimeCallbackBUT2(void const * argument)
 	//if(osOK != osTimerStop(myTimerBUT2Handle)){
 //		 Error_Handler();
 //	}
-	if (menu.doubleBtn(but1pressed, but2pressed)) {
+	if (service?serviceMenu.doubleBtn(but1pressed,but2pressed):menu.doubleBtn(but1pressed,but2pressed)) {
 		if(osOK != osTimerStart(myTimerBUT2Handle, 200)){
 				 Error_Handler();
 			};
@@ -1739,11 +1757,15 @@ void myTimeCallbackBUT2(void const * argument)
 
 
 
-	if (but2pressed > 20){
+	if (but2pressed == 20){
+		if(service == 0){
 			menu.navigate();
-			but1pressed=0;
-			return;
+		}else{
+			serviceMenu.longPlus();
 		}
+		//but1pressed=0;
+		//return;
+	}
 		but2pressed++;
 		if ( GPIO_PIN_RESET == HAL_GPIO_ReadPin( BUT2_GPIO_Port, BUT2_Pin ) ){
 
@@ -1754,7 +1776,7 @@ void myTimeCallbackBUT2(void const * argument)
 		}
 		else{
 
-			but1pressed = 0;
+			but2pressed = 0;
 		}
 	/*switch(screen.getCurPos()){
 		case 0:
@@ -1775,22 +1797,30 @@ void myTimerCalbakBUT1(void const * argument)
 {
 
 	/* USER CODE BEGIN myTimerCalbakBUT1 */
+ extern uint8_t service;
 
-	if (menu.doubleBtn(but1pressed,but2pressed)){
+
+	if (service?serviceMenu.doubleBtn(but1pressed,but2pressed):menu.doubleBtn(but1pressed,but2pressed)){
 		if(osOK != osTimerStart(myTimerBUT1Handle, 200)){
 				 Error_Handler();
 			}
 		return;
 
 	}
-	if(but1pressed==1)menu.navigate(true);
-	if (but1pressed > 20){
+	if(but1pressed==1)
+		{
+			if(service==0)menu.navigate(true);
+		}
+	if (but1pressed == 20){
 	//	if(osOK != osTimerStop(myTimerBUT1Handle)){
 	//		 Error_Handler();
 //		}
-		menu.enterExitSetting();
-		but1pressed=0;
-		return;
+		if(service==0)
+			menu.enterExitSetting();
+		else if(service>=5)
+			serviceMenu.longMinus();
+			//but1pressed=0;
+		//return;
 	}
 	but1pressed++;
 	if ( GPIO_PIN_RESET == HAL_GPIO_ReadPin( BUT1_GPIO_Port, BUT1_Pin ) ){

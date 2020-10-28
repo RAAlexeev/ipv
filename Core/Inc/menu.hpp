@@ -38,10 +38,11 @@ class MenuItem {
 
 
 public:
+	int16_t def,min,max;
 	uint8_t diode;
-	MenuItem(const GetValue getValue = NULL, const Action setVal = NULL,uint8_t led=0xff,
+	MenuItem(const GetValue getValue = NULL, const Action setVal = NULL,uint8_t led=0xff,int16_t def=0,int16_t min=0, int16_t max=199,
 			const Action act = NULL) :
-			action(act), setVal(setVal), getVal(getValue) {
+			action(act), setVal(setVal), getVal(getValue), def(def),min(min),max(max) {
 			if(led!=0xff ) diode = led;
 	}
 
@@ -69,15 +70,13 @@ extern class Menu {
 	//uint8_t curCH=0;
 	  const uint8_t maxIndex;
 	int8_t digPos = 0;
+	bool _firstRun=true;
 public:
 	static MenuItem  items[];
 
 
 	 explicit  Menu(  uint8_t m ):maxIndex(m){
-		led(6,false);
-		led(7,true);
-		led(2,true);
-		led(3,false);
+
 
 	}
 	uint8_t getNch(){
@@ -85,7 +84,7 @@ public:
 	}
 	inline bool doubleBtn(uint8_t &btn1, uint8_t &btn2) {
 		if(btn1 >= 1 && btn2 >= 1){
-			getCurentItem()->setValue(0);
+			getCurentItem()->setValue(getCurentItem()->def);
 			getCurentItem()->saveValue();
 			btn1=0;
 			btn2=0;
@@ -176,8 +175,108 @@ public:
 
 		return &(items[curIndex]);
 	}
+
+	 void firstRun(){
+		if( _firstRun){
+			led(getCurentItem()->diode,true);
+		}
+	 }
 	void display();
 
 
 
-} menu;
+}menu;
+
+extern class ServiceMenu {
+
+	uint8_t curIndex = 0;
+const uint8_t maxIndex;
+bool _firstRun=true;
+public:
+	static MenuItem  items[];
+	static uint8_t curCH;
+
+
+	 explicit  ServiceMenu(  uint8_t m ):maxIndex(m){
+		//led(6,false);
+		//led(7,true);
+	}
+
+		inline bool doubleBtn(uint8_t &btn1, uint8_t &btn2) {
+			if(btn1 >= 1 && btn2 >= 1){
+				getCurentItem()->setValue(getCurentItem()->def);
+				getCurentItem()->saveValue();
+				btn1=0;
+				btn2=0;
+				return true;
+			}
+			return false;
+		}
+
+
+	void plus(){
+		MenuItem* item = getCurentItem();
+		if(item->getValue(false) < item->max)
+			item->setValue(item->getValue(false)+0.1);
+	}
+
+	void minus(){
+		MenuItem* item = getCurentItem();
+		if(item->getValue(false) > item->min)
+			item->setValue(item->getValue(false)-0.1);
+	}
+
+	void longPlus(){
+		getCurentItem()->saveValue();
+
+		if(curIndex < maxIndex-1){
+			curIndex++;
+		}else{
+			curIndex=0;
+			curCH=!curCH;
+		//	if(curCH){
+		///		led(6,false);led(7,true);
+		///	}else{
+		//		led(7,false);led(6,true);
+		//	}
+		}
+
+		led(getCurentItem()->diode,true);
+	}
+
+	void longMinus(){
+		getCurentItem()->saveValue();
+
+		if(curIndex > 0 ){
+			curIndex--;
+		}else{
+			curIndex=maxIndex-1;
+			curCH=!curCH;
+			//if(curCH){
+		//		led(6,false);led(7,true);
+		//	}else{
+		//		led(7,false);led(6,true);
+		//	}
+		}
+
+		led(getCurentItem()->diode,true);
+	}
+
+	 MenuItem* getCurentItem() {
+
+		return &(items[curIndex]);
+	}
+	uint8_t getCurentIndex(){
+		 return curIndex ;
+	 }
+	 void firstRun(){
+		if( _firstRun){
+			led(getCurentItem()->diode,true);
+		}
+	 }
+	void display();
+
+
+
+} serviceMenu;
+

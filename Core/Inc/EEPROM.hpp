@@ -120,24 +120,28 @@ public:
 	VarEE<uint16_t> porog22 = VarEE<uint16_t>();
 	VarEE<uint16_t> range1 = VarEE<uint16_t>();
 	VarEE<uint16_t> range2 = VarEE<uint16_t>();
+	VarEE<int16_t> kA4_20 = VarEE<int16_t>();
+	VarEE<int16_t> kB4_20 = VarEE<int16_t>();
 	void init(){
 		if(ifThirstRun()){
 			reset();
 		}
 	};
 	inline void reset(void) {
-		pwd.set(15);
+		pwd.set(12);
 		porog11.set(0);
 		porog12.set(0);
 		porog21.set(0);
 		porog22.set(0);
 		range1.set(200);
 		range2.set(200);
+		kA4_20.set(0);
+		kB4_20.set(10);
 	}
 
 	bool ifThirstRun()
 	{
-		return pwd()!=15;
+		return pwd()!=12;
 	}
 
 } EEPROM;
