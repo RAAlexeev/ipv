@@ -1513,8 +1513,9 @@ void StartDefaultTask(void const * argument)
 		  //HAL_GPIO_WritePin(A_GPIO_Port,A_Pin,GPIO_PIN_SET);
    //menuInit();
 
-		static uint16_t tout = 0xF;
-  /* Infinite loop */
+		uint16_t tout = 0xF;
+		bool onlyOne = true;
+	/* Infinite loop */
   for(;;)
   {
 
@@ -1523,12 +1524,12 @@ void StartDefaultTask(void const * argument)
 		  serviceMenu.display();
 		  PWM(serviceMenu.getCurentIndex()?(serviceMenu.curCH?EEPROM.range1():EEPROM.range2()):0,(serviceMenu.curCH?EEPROM.range1():EEPROM.range2())/10);
 	  } else if(service==0||tout==0){
-		  if(tout==0){
+		  if(onlyOne){
 				led(6,false);
 				led(7,true);
 				led(2,true);
 				led(3,false);
-				tout=0xf;
+				onlyOne = false;
 				service=0;
 		  }
 		  uint8_t msk;
