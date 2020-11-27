@@ -92,7 +92,7 @@ osThreadId myTask_S2Handle;
 uint32_t myTask_S2Buffer[ 500 ];
 osStaticThreadDef_t myTask_S2ControlBlock;
 osThreadId myTaskModbusHandle;
-uint32_t myTaskModbusBuffer[ 128 ];
+uint32_t myTaskModbusBuffer[ 2048 ];
 osStaticThreadDef_t myTaskModbusControlBlock;
 osTimerId myTimerBUT2Handle;
 osStaticTimerDef_t myTimerBUT2ControlBlock;
@@ -243,7 +243,6 @@ int main(void){
   MX_SPI1_Init();
   MX_TIM1_Init();
   MX_TIM3_Init();
-  MX_USART1_UART_Init();
   MX_TIM4_Init();
   MX_TIM2_Init();
   MX_TIM8_Init();
@@ -252,8 +251,9 @@ int main(void){
  // MX_IWDG_Init();
   //MX_WWDG_Init();
   /* USER CODE BEGIN 2 */
-
+osDelay(1000);
   EEPROM.init();
+  MX_USART1_UART_Init();
 
   if (( GPIO_PIN_RESET == HAL_GPIO_ReadPin( BUT1_GPIO_Port, BUT1_Pin ) )&&( GPIO_PIN_RESET == HAL_GPIO_ReadPin( BUT2_GPIO_Port, BUT2_Pin ) ))
 	  service++;
@@ -317,7 +317,7 @@ int main(void){
 
   /* definition and creation of myCountingSemTIM4 */
   osSemaphoreStaticDef(myCountingSemMB, &myCountingSemMBcontrolBlock);
-  myCountingSemMBhandle = osSemaphoreCreate(osSemaphore(myCountingSemMB), 2);
+  myCountingSemMBhandle = osSemaphoreCreate(osSemaphore(myCountingSemMB), 5);
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
   /* add semaphores, ... */
@@ -327,7 +327,9 @@ int main(void){
   osSemaphoreWait( myCountingSem_S01Handle, portMAX_DELAY);
   osSemaphoreWait( myCountingSem_S02Handle, portMAX_DELAY);
   osSemaphoreWait( myCountingSemMBhandle, portMAX_DELAY);
-
+  osSemaphoreWait( myCountingSemMBhandle, portMAX_DELAY);
+  osSemaphoreWait( myCountingSemMBhandle, portMAX_DELAY);
+  osSemaphoreWait( myCountingSemMBhandle, portMAX_DELAY);
   /* USER CODE END RTOS_SEMAPHORES */
 
   /* Create the timer(s) */
@@ -345,7 +347,7 @@ int main(void){
 
   /* Create the thread(s) */
   /* definition and creation of defaultTask */
-  osThreadStaticDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 256, defaultTaskBuffer, &defaultTaskControlBlock);
+  osThreadStaticDef(defaultTask, StartDefaultTask, osPriorityBelowNormal, 0, 256, defaultTaskBuffer, &defaultTaskControlBlock);
   defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
   /* definition and creation of myTask_S1 */
@@ -357,7 +359,7 @@ int main(void){
   myTask_S2Handle = osThreadCreate(osThread(myTask_S2), NULL);
 
   /* definition and creation of myTaskModbus */
-  osThreadStaticDef(myTaskModbus, StartTaskModbus, osPriorityBelowNormal, 0, 128, myTaskModbusBuffer, &myTaskModbusControlBlock);
+  osThreadStaticDef(myTaskModbus, StartTaskModbus, osPriorityNormal, 0, 512, myTaskModbusBuffer, &myTaskModbusControlBlock);
   myTaskModbusHandle = osThreadCreate(osThread(myTaskModbus), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
@@ -1011,13 +1013,21 @@ static void MX_USART1_UART_Init(void)
   /* USER CODE END USART1_Init 0 */
 
   /* USER CODE BEGIN USART1_Init 1 */
-
+	if(service)  {
+		  huart1.Init.BaudRate = EEPROM.uartSpeed()*10;
+		  huart1.Init.WordLength = UART_WORDLENGTH_8B;
+		  huart1.Init.StopBits = uartMBparam::getStopBit();
+		  huart1.Init.Parity = uartMBparam::getParity();
+	  }else
   /* USER CODE END USART1_Init 1 */
-  huart1.Instance = USART1;
+
+  {
   huart1.Init.BaudRate = 115200;
   huart1.Init.WordLength = UART_WORDLENGTH_8B;
   huart1.Init.StopBits = UART_STOPBITS_1;
   huart1.Init.Parity = UART_PARITY_NONE;
+  }
+huart1.Instance = USART1;
   huart1.Init.Mode = UART_MODE_TX_RX;
   huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
   huart1.Init.OverSampling = UART_OVERSAMPLING_16;
@@ -1685,8 +1695,8 @@ void StartTask_S2(void const * argument)
 /* USER CODE BEGIN Header_StartTaskModbus */
 void sendData(uint8_t* data, uint8_t len ){
 	if(len==0){
-		if(	HAL_UART_Receive_IT(&huart1,mb_buf_in,1) != HAL_OK) {
-		  Error_Handler();
+		while(	HAL_UART_Receive_IT(&huart1,mb_buf_in,1) != HAL_OK) {
+		  osDelay(7);//Error_Handler();
 		}
 	}else{
 	  HAL_GPIO_WritePin(U1_DE_GPIO_Port,U1_DE_Pin,GPIO_PIN_SET);
@@ -1717,7 +1727,7 @@ void StartTaskModbus(void const * argument)
 {
   /* USER CODE BEGIN StartTaskModbus */
 	ModBus_Init();
-	ModBus_SetAddress(1);
+	ModBus_SetAddress(service?1:uartMBparam::getAddr());
 	HAL_GPIO_WritePin(U1_DE_GPIO_Port,U1_DE_Pin,GPIO_PIN_RESET);
 	if(	HAL_UART_Receive_IT(&huart1,mb_buf_in,1) != HAL_OK) {
 		  Error_Handler();
@@ -1729,12 +1739,14 @@ void StartTaskModbus(void const * argument)
 			 if( osSemaphoreWait(myCountingSemMBhandle, osWaitForever )!= osOK ){
 				 Error_Handler();
 			 }
+			 if(uxSemaphoreGetCount(myCountingSemMBhandle) > 0  )
+				 continue;
 			  HAL_UART_DMAStop( &huart1 );
 
 			  uint32_t cnt =256 - __HAL_DMA_GET_COUNTER(huart1.hdmarx)+1;
 
 			ModBusParse(cnt);
-    
+
   }
   /* USER CODE END StartTaskModbus */
 }
@@ -1758,16 +1770,18 @@ void myTimeCallbackBUT2(void const * argument)
 
 
 
-	if (but2pressed == 20){
-		if(service == 0){
-			menu.navigate();
-		}else{
-			serviceMenu.longPlus();
+		if (but2pressed == 20){
+			if(service == 0 && menu.isEdit){
+				menu.navigate();
+			}else{
+				serviceMenu.longPlus();
+			}
+			//but1pressed=0;
+			//return;
 		}
-		//but1pressed=0;
-		//return;
-	}
+
 		but2pressed++;
+
 		if ( GPIO_PIN_RESET == HAL_GPIO_ReadPin( BUT2_GPIO_Port, BUT2_Pin ) ){
 
 		if(osOK != osTimerStart(myTimerBUT2Handle, 100)){

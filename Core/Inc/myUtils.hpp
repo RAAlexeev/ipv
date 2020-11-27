@@ -8,6 +8,8 @@
 #ifndef SRC_MYUTILS_HPP_
 #define SRC_MYUTILS_HPP_
 #include "stm32f4xx_hal.h"
+#include "main.h"
+
 namespace byteOrder {
 
    inline uint16_t  htons(uint16_t *data);
@@ -34,4 +36,17 @@ namespace myUtils{
 	}
 }
 
+namespace uartMBparam{
+typedef union{	mbAddrUartParam_t p;
+
+uint16_t raw;
+}param_t ;
+extern  param_t  param;
+		uint8_t getAddr();
+		uint32_t getParity();
+		uint32_t getStopBit();
+		uint8_t setAddr(uint8_t val);
+		uint8_t setParity(uint8_t val );
+		uint8_t setStopBit(uint8_t val);
+}
 #endif /* SRC_MYUTILS_HPP_ */

@@ -35,8 +35,10 @@ inline uint16_t mb_reg(uint32_t index, uint16_t value=0xFFFF ){
 	}b;
 if(value==0xFFFF)
 	switch(index){
-
-
+		case 1:return EEPROM.uartSpeed();
+		case 2:return uartMBparam::param.p.parity;
+		case 3:return uartMBparam::param.p.stopBit;
+		case 4:return uartMBparam::getAddr();
 		case 10: return EEPROM.porog11();
 		case 11: return EEPROM.porog12();
 		case 12: return EEPROM.range1();
@@ -63,6 +65,10 @@ if(value==0xFFFF)
 		case 23: b.f = SignalChenal::getInstance(ADC2)->getVelocity();
 			return (uint16_t)(b.ui);
 	}else switch(index){
+	case 1:return EEPROM.uartSpeed.set(value);
+	case 2:return uartMBparam::setParity(value);
+	case 3:return uartMBparam::setStopBit(value);
+	case 4:return uartMBparam::setAddr(value);
 		case 10: return EEPROM.porog11.set(value);
 		case 11: return EEPROM.porog12.set(value);
 		case 12: return EEPROM.range1.set(value);

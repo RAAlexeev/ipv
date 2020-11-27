@@ -311,7 +311,7 @@ void USART1_IRQHandler(void)
 			if(DMA_cnt == __HAL_DMA_GET_COUNTER(huart1.hdmarx))IT_cnt++;
 			else IT_cnt = 0;
 			DMA_cnt=__HAL_DMA_GET_COUNTER(huart1.hdmarx);
-			if(IT_cnt > huart1.Init.BaudRate/5760+25){
+			if(IT_cnt > huart1.Init.BaudRate/5760+125){
 				IT_cnt=0;
 				__HAL_UART_DISABLE_IT(&huart1, UART_IT_IDLE);
 				if (osSemaphoreRelease(myCountingSemMBhandle)!= osOK){

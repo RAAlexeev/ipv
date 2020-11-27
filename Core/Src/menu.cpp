@@ -53,7 +53,7 @@ MenuItem  Menu::items[]={
 			 ,3
 			 ),
 			 MenuItem(
-					 [](){ return (float32_t)EEPROM.porog11.get()/10; },
+					 [](){ return (float32_t)EEPROM.porog11()/10; },
 					 [](float32_t v){ EEPROM.porog11.set(round(v*10)); }
 					 ,4
 			 ),

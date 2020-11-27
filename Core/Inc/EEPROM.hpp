@@ -23,7 +23,7 @@ extern class EEPROM_t {
 
 	static uint16_t varOffset;
 public:
-	template<typename T> class Jornal {
+/*	template<typename T> class Jornal {
 #define SIZE (256)
 		uint16_t offset;
 		uint16_t maxPos;
@@ -56,20 +56,20 @@ public:
 		}
 
 	};
-
+*/
 	template<typename T = uint16_t, int LENAREA = 32>
 	class  VarEE {
 
 		// T value = 0;
-
+		bool wasRead = false;
 		const uint16_t addr;
 		uint16_t _index;
 		VarEE *copy1, *copy2;
 
-		T _get(bool force = false)const;
+		T _get(bool force = false);
 		void _set(T _val) {
 
-			if ((value == _val) && (value || get() == _val))
+			if ((value == _val) && (get() == _val))
 				return;
 			do {
 
@@ -90,9 +90,8 @@ public:
 
 		T value = 0;
 	public:
-		VarEE(VarEE<T, LENAREA> *_copy1 = NULL,
-				VarEE<T, LENAREA> *_copy2 = NULL) :
-				addr(varOffset), copy1(_copy1), copy2(_copy2) {
+		VarEE(VarEE<T, LENAREA> *_copy1 = NULL,	VarEE<T, LENAREA> *_copy2 = NULL) :	addr(varOffset), copy1(_copy1), copy2(_copy2) {
+
 			varOffset += LENAREA;
 		}
 
@@ -105,7 +104,7 @@ public:
 			return _val;
 		}
 
-		T get() const ;
+		T get()  ;
 
 
 		T operator()();
@@ -122,6 +121,8 @@ public:
 	VarEE<uint16_t> range2 = VarEE<uint16_t>();
 	VarEE<int16_t> kA4_20 = VarEE<int16_t>();
 	VarEE<int16_t> kB4_20 = VarEE<int16_t>();
+	VarEE<uint16_t> uartSpeed = VarEE<uint16_t>();
+	VarEE<uint16_t> uartParam_mbAddr = VarEE<uint16_t>();
 	void init(){
 		if(ifThirstRun()){
 			reset();
@@ -137,11 +138,28 @@ public:
 		range2.set(200);
 		kA4_20.set(0);
 		kB4_20.set(10);
+		uartSpeed.set(11520);
+
+	union{	mbAddrUartParam_t p;
+
+			uint16_t raw;
+		  }param = {
+
+				.p={.addr=1,
+					.parity=0,
+					.stopBit = 1,
+					.bits = 0
+				}
+
+		};
+
+		uartParam_mbAddr.set(param.raw);
+
 	}
 
 	bool ifThirstRun()
 	{
-		return pwd()!=12;
+		return pwd() != 12;
 	}
 
 } EEPROM;

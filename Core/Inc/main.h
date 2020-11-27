@@ -69,6 +69,13 @@ extern "C" {
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
 //typedef enum {false, true} bool;
+typedef struct __packed{
+		unsigned addr:8;
+		unsigned parity:3;
+		unsigned stopBit:2;
+		unsigned bits:3;
+}mbAddrUartParam_t;
+
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/

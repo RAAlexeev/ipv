@@ -92,8 +92,8 @@ inline bool data_get(T *bf, uint16_t addr,	uint16_t len)  {
 	}
 
 template<typename T,int LENAREA>
-T EEPROM_t::VarEE<T,LENAREA>::_get(bool force) const{
-	if (value != 0 && !force)
+T EEPROM_t::VarEE<T,LENAREA>::_get(bool force) {
+	if (( this->wasRead )&& !force )
 		return value;
 	T ret = static_cast<T>(0xFFFFFFFF);
 	T buf[LENAREA / sizeof(T)];
@@ -105,11 +105,11 @@ T EEPROM_t::VarEE<T,LENAREA>::_get(bool force) const{
 	for (volatile uint16_t i = 1; i < LENAREA / sizeof(T); i++) {
 		ret ^= buf[i];
 	}
-
+	this->wasRead = true;
 	return ret;
 }
 template<typename T,int LENAREA>
-T EEPROM_t::VarEE<T,LENAREA>::get( ) const {
+T EEPROM_t::VarEE<T,LENAREA>::get( )  {
 			T res = _get();
 
 			if (copy1 != NULL) {

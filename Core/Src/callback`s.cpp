@@ -22,7 +22,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
               
                osTimerStart(myTimerBUT1Handle, 30 );
 
-         } else if( but1pressed > 0 && but1pressed  < 10 ){//кнопка была нажата боле 30мс и  отпущена{
+         } else if( but1pressed > 0 && but1pressed  < 7 ){//кнопка была нажата боле 30мс и  отпущена{
 
 
         	if(service && service < 5)
@@ -44,7 +44,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
            	 extern uint8_t but2pressed;
 
 
-           	 if( but2pressed > 0 && (but2pressed < 5 || !menu.isEdit)){//кнопка была нажата боле 30мс и  отпущена
+           	 if( but2pressed > 0 && (but2pressed < 7 || !menu.isEdit)){//кнопка была нажата боле 30мс и  отпущена
         	  if(!service)
         		  menu.switchCH_edit();
         	  else{
