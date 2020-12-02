@@ -39,6 +39,7 @@
 #include "cmsis_os.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -293,25 +294,25 @@ void TIM4_IRQHandler(void)
 void USART1_IRQHandler(void)
 {
   /* USER CODE BEGIN USART1_IRQn 0 */
+	extern uint8_t mb_buf_in[256];
 	extern osSemaphoreId myCountingSemMBhandle;
-	    if ((__HAL_UART_GET_FLAG(&huart1, UART_FLAG_RXNE) != RESET) && (__HAL_UART_GET_IT_SOURCE(&huart1, UART_IT_RXNE) != RESET)){
-	    	 HAL_UART_IRQHandler(&huart1);
-	   	 if(	HAL_UART_Receive_DMA(&huart1,mb_buf_in+1,256) != HAL_OK) {
-	   			  Error_Handler();
-	   		  }
-	    	__HAL_UART_ENABLE_IT(&huart1, UART_IT_IDLE);
+	//    if ((__HAL_UART_GET_FLAG(&huart1, UART_FLAG_RXNE) != RESET) && (__HAL_UART_GET_IT_SOURCE(&huart1, UART_IT_RXNE) != RESET)){
+	//   	 HAL_UART_IRQHandler(&huart1);
 
-	    }else
+
+	//    }
 
 		if (((__HAL_UART_GET_FLAG(&huart1, UART_FLAG_IDLE) != RESET) && (__HAL_UART_GET_IT_SOURCE(&huart1, UART_IT_IDLE) != RESET))
 				/*|| (__HAL_UART_GET_IT_SOURCE(&huart1, UART_IT_CM) != RESET)*/){
 
 			static uint32_t DMA_cnt,  IT_cnt=0;
 
-			if(DMA_cnt == __HAL_DMA_GET_COUNTER(huart1.hdmarx))IT_cnt++;
+			if(DMA_cnt == __HAL_DMA_GET_COUNTER(huart1.hdmarx) && DMA_cnt)
+				IT_cnt++;
 			else IT_cnt = 0;
+
 			DMA_cnt=__HAL_DMA_GET_COUNTER(huart1.hdmarx);
-			if(IT_cnt > huart1.Init.BaudRate/5760+125){
+			if(IT_cnt > 1  && (( ((DMA_cnt < 250)&&(mb_buf_in[1]!=15||mb_buf_in[1]!=16))|| IT_cnt > 5))){
 				IT_cnt=0;
 				__HAL_UART_DISABLE_IT(&huart1, UART_IT_IDLE);
 				if (osSemaphoreRelease(myCountingSemMBhandle)!= osOK){
@@ -320,10 +321,13 @@ void USART1_IRQHandler(void)
 			}
 
 		}else
+
+
   /* USER CODE END USART1_IRQn 0 */
   HAL_UART_IRQHandler(&huart1);
   /* USER CODE BEGIN USART1_IRQn 1 */
-  /* USER CODE END USART1_IRQn 1 */
+
+/* USER CODE END USART1_IRQn 1 */
 }
 
 /**

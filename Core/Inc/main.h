@@ -94,7 +94,7 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 void _Error_Handler(const char *f,const uint16_t line);
 
 /* USER CODE BEGIN EFP */
-extern uint8_t mb_buf_in[256];
+
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/

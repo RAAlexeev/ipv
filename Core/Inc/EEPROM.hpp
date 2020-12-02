@@ -14,9 +14,11 @@
 extern I2C_HandleTypeDef hi2c1;
 extern void delay(uint32_t ms);
 
-template<typename T>
-bool data_get(T *bf, uint16_t addr, uint16_t len = sizeof(T));
-template<typename T>
+
+
+//template<typename T>
+bool data_get(void *bf, uint16_t addr, uint16_t len = sizeof(uint16_t));
+template<typename T = uint16_t>
 bool data_put(uint16_t addr, T vol);
 
 extern class EEPROM_t {
@@ -67,26 +69,7 @@ public:
 		VarEE *copy1, *copy2;
 
 		T _get(bool force = false);
-		void _set(T _val) {
-
-			if ((value == _val) && (get() == _val))
-				return;
-			do {
-
-				T elem_i;
-				T val = _val;
-				if (++_index >= (LENAREA / sizeof(T)))
-					_index = 0;
-
-				if (data_get(&elem_i, addr + _index * sizeof(T))) {
-					val ^= (_get() ^ elem_i);
-					data_put(addr + _index * sizeof(T), val);
-				}
-				// tested
-
-			} while (_get(true) != _val);
-			value = _val;
-		}
+		void _set(T _val);
 
 		T value = 0;
 	public:
@@ -129,7 +112,7 @@ public:
 		}
 	};
 	inline void reset(void) {
-		pwd.set(12);
+		pwd.set(32);
 		porog11.set(0);
 		porog12.set(0);
 		porog21.set(0);
@@ -159,7 +142,7 @@ public:
 
 	bool ifThirstRun()
 	{
-		return pwd() != 12;
+		return pwd() != 32;
 	}
 
 } EEPROM;

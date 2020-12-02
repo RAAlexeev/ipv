@@ -91,10 +91,10 @@ Menu menu=Menu(sizeof(Menu::items)/sizeof(MenuItem));
 
 void Menu::display(){
 	SC39_show(getCurentItem()->getValue( curIndex < 3 ), digPos);
-	firstRun();
+
 }
 void ServiceMenu::display(){
-	firstRun();
+
 		SC39_show(getCurentItem()->getValue(false), 0);
 
 }

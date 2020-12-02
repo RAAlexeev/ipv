@@ -251,7 +251,7 @@ int main(void){
  // MX_IWDG_Init();
   //MX_WWDG_Init();
   /* USER CODE BEGIN 2 */
-osDelay(1000);
+//osDelay(1000);
   EEPROM.init();
   MX_USART1_UART_Init();
 
@@ -1013,7 +1013,7 @@ static void MX_USART1_UART_Init(void)
   /* USER CODE END USART1_Init 0 */
 
   /* USER CODE BEGIN USART1_Init 1 */
-	if(service)  {
+	if(service==0)  {
 		  huart1.Init.BaudRate = EEPROM.uartSpeed()*10;
 		  huart1.Init.WordLength = UART_WORDLENGTH_8B;
 		  huart1.Init.StopBits = uartMBparam::getStopBit();
@@ -1138,6 +1138,9 @@ static void MX_DMA_Init(void)
   /* DMA2_Stream4_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA2_Stream4_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(DMA2_Stream4_IRQn);
+  /* DMA2_Stream5_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Stream5_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Stream5_IRQn);
   /* DMA2_Stream7_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA2_Stream7_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(DMA2_Stream7_IRQn);
@@ -1500,7 +1503,7 @@ return ret;
 };
 /* USER CODE END Header_StartDefaultTask */
 
-
+static uint32_t UartTimeOut=0;
 void StartDefaultTask(void const * argument)
 {
 
@@ -1556,6 +1559,18 @@ void StartDefaultTask(void const * argument)
 	  --tout;
 
 	  osDelay(300);
+
+	  if(UartTimeOut++ > 4){
+		   if(	HAL_UART_DMAStop(&huart1)!= HAL_OK) {
+				  Error_Handler();
+		   }
+			if(	HAL_UART_Abort_IT(&huart1)!= HAL_OK) {
+				  Error_Handler();
+			}
+		if(	HAL_UART_Receive_IT(&huart1,mb_buf_in,1) != HAL_OK) {
+
+		}else UartTimeOut =0;
+	  }
   }
   
   /* USER CODE END 5 */ 
@@ -1694,28 +1709,56 @@ void StartTask_S2(void const * argument)
 
 /* USER CODE BEGIN Header_StartTaskModbus */
 void sendData(uint8_t* data, uint8_t len ){
-	if(len==0){
-		while(	HAL_UART_Receive_IT(&huart1,mb_buf_in,1) != HAL_OK) {
-		  osDelay(7);//Error_Handler();
-		}
-	}else{
-	  HAL_GPIO_WritePin(U1_DE_GPIO_Port,U1_DE_Pin,GPIO_PIN_SET);
+	HAL_GPIO_WritePin(U1_DE_GPIO_Port,U1_DE_Pin,GPIO_PIN_SET);
+
+	  HAL_UART_DMAStop( &huart1 );
 	  if( HAL_UART_Transmit_DMA( &huart1, data, len )!= HAL_OK ){
 		  Error_Handler();
 	  }
-	}
+
 }
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart){
 //	if(huart == &huart1)
 
-	HAL_GPIO_WritePin(U1_DE_GPIO_Port,U1_DE_Pin,GPIO_PIN_RESET);
-	  if(	HAL_UART_Receive_IT(&huart1,mb_buf_in,1) != HAL_OK) {
-		  Error_Handler();
-	  }
+
+	   HAL_GPIO_WritePin(U1_DE_GPIO_Port,U1_DE_Pin,GPIO_PIN_RESET);
+	  // uint8_t b;
+
+	 //  HAL_UART_Receive(&huart1,&b,1,1);
+
+	   if(	HAL_UART_Receive_IT(&huart1,mb_buf_in,1) != HAL_OK) {
+			  Error_Handler();
+		} else
+			 UartTimeOut = 0;
 }
  void HAL_UART_AbortTransmitCpltCallback(UART_HandleTypeDef *huart){
 	 HAL_UART_TxCpltCallback(huart);
+ }
+ /*  static int8_t reciving = 8;
+ void HAL_UART_RxHalfCpltCallback(UART_HandleTypeDef *huart){
+	 //if(&huart1==huart)
+	 {
+
+			 if((mb_buf_in[1]==15)||(mb_buf_in[1]==16)){
+				 reciving =__HAL_DMA_GET_COUNTER(huart1.hdmarx)+mb_buf_in[6]+1;
+				 __HAL_DMA_SET_COUNTER(huart1.hdmarx,reciving);
+
+			 }//else{
+			//	int8_t n = __HAL_DMA_GET_COUNTER(huart1.hdmarx)-4;
+		//	//	 __HAL_DMA_SET_COUNTER(huart1.hdmarx,2);
+			// }
+			 	if (osSemaphoreRelease(myCountingSemMBhandle)!= osOK){
+				  Error_Handler();
+				}
+	 }
+
+ }*/
+ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
+	  if(HAL_UART_Receive_DMA(&huart1,mb_buf_in+1,255) != HAL_OK) {
+		  Error_Handler();
+	  }
+ 	   	__HAL_UART_ENABLE_IT(&huart1, UART_IT_IDLE);
  }
 /**
 * @brief Function implementing the myTaskModbus thread.
@@ -1728,7 +1771,9 @@ void StartTaskModbus(void const * argument)
   /* USER CODE BEGIN StartTaskModbus */
 	ModBus_Init();
 	ModBus_SetAddress(service?1:uartMBparam::getAddr());
+
 	HAL_GPIO_WritePin(U1_DE_GPIO_Port,U1_DE_Pin,GPIO_PIN_RESET);
+
 	if(	HAL_UART_Receive_IT(&huart1,mb_buf_in,1) != HAL_OK) {
 		  Error_Handler();
 	}
@@ -1739,13 +1784,62 @@ void StartTaskModbus(void const * argument)
 			 if( osSemaphoreWait(myCountingSemMBhandle, osWaitForever )!= osOK ){
 				 Error_Handler();
 			 }
-			 if(uxSemaphoreGetCount(myCountingSemMBhandle) > 0  )
-				 continue;
-			  HAL_UART_DMAStop( &huart1 );
+			// if(uxSemaphoreGetCount(myCountingSemMBhandle) > 0  )
+				// continue;
 
-			  uint32_t cnt =256 - __HAL_DMA_GET_COUNTER(huart1.hdmarx)+1;
 
-			ModBusParse(cnt);
+			 extern uint8_t mb_addr;
+
+			  // for(uint8_t i=0; i < 2;i++ )
+			   if(mb_buf_in[0] == mb_addr||mb_buf_in[1] == mb_addr){ // its not our address!
+
+
+
+
+				  // if( osSemaphoreWait(myCountingSemMBhandle, osWaitForever )!= osOK ){//ждем получение всего
+					//	 Error_Handler();
+				 //  }
+
+
+				   uint32_t recived = 256 - __HAL_DMA_GET_COUNTER(huart1.hdmarx);
+				   if(	HAL_UART_DMAStop(&huart1)!= HAL_OK) {
+					   Error_Handler();
+				   }
+					 extern uint8_t *p_mb_buf_in;
+					  p_mb_buf_in  = mb_buf_in;
+					   if(mb_buf_in[1] == mb_addr)
+						   p_mb_buf_in++;
+				  if(recived < 8  || ! ModBusParse(recived)){
+					   HAL_GPIO_WritePin(U1_DE_GPIO_Port,U1_DE_Pin,GPIO_PIN_RESET);
+					   if(	HAL_UART_DMAStop(&huart1)!= HAL_OK) {
+							  Error_Handler();
+					   }
+					   if(	HAL_UART_Abort_IT(&huart1)!= HAL_OK) {
+							  Error_Handler();
+					   }
+
+					   if(	HAL_UART_Receive_IT(&huart1,mb_buf_in,1) != HAL_OK){
+
+					   }else
+							 UartTimeOut = 0;
+
+				  }
+			   }else{
+
+				   HAL_GPIO_WritePin(U1_DE_GPIO_Port,U1_DE_Pin,GPIO_PIN_RESET);
+				   if(	HAL_UART_DMAStop(&huart1)!= HAL_OK) {
+					   Error_Handler();
+				   }
+				   if(	HAL_UART_Abort_IT(&huart1)!= HAL_OK) {
+						  Error_Handler();
+				   }
+
+				   if(	HAL_UART_Receive_IT(&huart1,mb_buf_in,1) != HAL_OK) {
+						  Error_Handler();
+					} else
+						 UartTimeOut = 0;
+
+	  }
 
   }
   /* USER CODE END StartTaskModbus */

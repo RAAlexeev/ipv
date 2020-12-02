@@ -77,9 +77,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
   osSemaphoreRelease(myCountingSem_S02Handle);
   */
 }
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
 
-}
 
 void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 {
