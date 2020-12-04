@@ -9,12 +9,11 @@
 
 
 
-#undef DEBUG
 
 
 #include <Filter.h>
 
-
+float32_t const Filter::coaf[10] __attribute__((section(".ccmram")))={b10,b11,b12,-a11,-a12,b20,b21,b22,-a21,-a22};
 
 Filter::Filter() {
 	// TODO Auto-generated constructor stub
@@ -28,7 +27,7 @@ Filter::~Filter() {
 
 
 
- void Filter::exec( float32_t  *pSrc, float32_t *pDst,  uint32_t  blockSize){
+ void Filter::exec( float32_t  *pSrc, float32_t *pDst,  uint32_t  blockSize)const{
 		float32_t   *bufIn = pSrc;//new float32_t[LEN];
 	 //{2,state,a,b};
 //	 arm_iir_lattice_init_f32(&S,1,a,b,state,blockSize);

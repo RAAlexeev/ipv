@@ -29,6 +29,15 @@ namespace byteOrder {
 }
 
 namespace myUtils{
+
+inline uint32_t pow10(uint8_t n){
+	uint32_t ret=0;
+	if(n==0) return 1;
+	while(n--){
+		ret *=10;
+	}
+	return ret;
+}
 	inline void ITM_SendStr(const  char *s ){
 		while(*s){
 		ITM_SendChar(*s++ );

@@ -106,6 +106,7 @@ public:
 	VarEE<int16_t> kB4_20 = VarEE<int16_t>();
 	VarEE<uint16_t> uartSpeed = VarEE<uint16_t>();
 	VarEE<uint16_t> uartParam_mbAddr = VarEE<uint16_t>();
+	VarEE<uint16_t> relayDelay = VarEE<uint16_t>();
 	void init(){
 		if(ifThirstRun()){
 			reset();
@@ -122,6 +123,7 @@ public:
 		kA4_20.set(0);
 		kB4_20.set(10);
 		uartSpeed.set(11520);
+		relayDelay.set(100);
 
 	union{	mbAddrUartParam_t p;
 

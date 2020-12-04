@@ -13,9 +13,9 @@
 #include "Filter.h"
 
 class SignalChenal{
-	static const uint32_t  BUFLEN = 4096u;
-	static  SignalChenal instances[];
-	Filter filter = Filter();
+	static const uint32_t  BUFLEN  __attribute__((section(".ccmram")))= 4096u;
+	static  SignalChenal  instances[];
+	const Filter filter = Filter();
 	CircularBuffer<float32_t,7> velocity_ =  CircularBuffer<float32_t,7>();
 	CircularBuffer<float32_t,7> acceleration_ =  CircularBuffer<float32_t,7>();
 	float32_t y = 0;
@@ -30,13 +30,13 @@ public:
 	static void HAL_ADC_M1ConvCpltCallback(DMA_HandleTypeDef * 	hdma);
 	void * swBuffer();
 	void calc();
-	inline float32_t getVelocity(){
+	inline float32_t getVelocity()const {
 		return velocity_.average();
 	}
-	inline float32_t getAcceleration(){
+	inline float32_t getAcceleration()const {
 		return acceleration_.average();
 	}
-	static SignalChenal* getInstance(void* hadc){
+	static  SignalChenal*  getInstance(void* hadc){
 		extern ADC_HandleTypeDef hadc1;
 		return &instances[(hadc == &hadc1 || hadc == ADC1)?0:1];
 	}

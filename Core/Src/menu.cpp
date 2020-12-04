@@ -19,12 +19,17 @@ MenuItem  ServiceMenu::items[]={
 			 MenuItem(
 					 [](){ return  (float32_t)EEPROM.kA4_20()/10;}
 			 	 	,[](float32_t v){ EEPROM.kA4_20.set(round(v*10)); }
-			 	 	,0,0,-100
+			 	 	,0,0,0,-100
 			 	 	 ),
 			 MenuItem(
 					 [](){ return  (float32_t)EEPROM.kB4_20()/10;}
 			 	 	,[](float32_t v){ EEPROM.kB4_20.set(round(v*10)); }
-			 	 	,7,0,-100
+			 	 	,7,0,0,-100
+			 ),
+			 MenuItem(
+					 [](){ return  (float32_t)EEPROM.relayDelay()/10;}
+			 	 	,[](float32_t v){ EEPROM.relayDelay.set(round(v*10)); }
+			 	 	,6,10,0,100
 			 )
 };
 

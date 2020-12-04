@@ -1,6 +1,5 @@
 #include "main.h"
 #include <stdio.h>
-#include  "FFT.h"
 #include "buffer.hpp"
 #include "myUtils.hpp"
 #include "stm32f4xx.h"
@@ -43,7 +42,7 @@ SignalChenal::SignalChenal(){
   printf("%i.%i", intPart, fractPart);
 }*/
 
-extern inline void filter( float32_t  *pSrc, float32_t *pDst, uint32_t blockSize);
+//extern inline void filter( float32_t  *pSrc, float32_t *pDst, uint32_t blockSize);
 
 inline void * SignalChenal::swBuffer(){
 
@@ -82,40 +81,40 @@ void SignalChenal::calc() {
 //while(bufOut_f32==NULL){
 	//;
 //}
-	static  float32_t  bufOut_f32_1[LEN] __attribute__((section(".ccmram")));
-	static  float32_t  bufOut_f32_2[LEN] __attribute__((section(".ccmram")));
+	static  float32_t  bufOut_f32_1[BUFLEN] __attribute__((section(".ccmram")));
+	static  float32_t  bufOut_f32_2[BUFLEN] __attribute__((section(".ccmram")));
 	float32_t* bufOut_f32 = (this==&instances[0])?bufOut_f32_1:bufOut_f32_2;
 	//for(uint16_t j=0;j < LEN/8 ;j++){
 	//taskENTER_CRITICAL();
 
 
 
-	 filter.exec(src/*+LEN/8*j*/, bufOut_f32,  LEN);
+	 filter.exec(src/*+LEN/8*j*/, bufOut_f32,  BUFLEN);
 //taskEXIT_CRITICAL();
 
-	 float32_t a;
+	 float32_t a, _y=y;
 
-	for(uint16_t i = 0; i < LEN; i++ ){
+	for(uint16_t i = 0; i < BUFLEN; i++ ){
 			a = bufOut_f32[i] * 9.82E+040;//0.668E+40;
-			y = a + y*k;
+			y = a + _y*k;
 
 
 			A.sum += a;
  		    A.sumQ += a*a;
 
-			V.sum += y;
-			V.sumQ += y*y;
+			V.sum += _y;
+			V.sumQ += _y*_y;
 
 			//bufOut_f32[i]=y;
 	}
-
+	y=_y;
 	//free( bufOut_f32 );
-	if(ARM_MATH_SUCCESS == arm_sqrt_f32( ( A.sumQ*LEN - A.sum*A.sum )/(LEN*LEN), &A.res ) ){
+	if(ARM_MATH_SUCCESS == arm_sqrt_f32( ( A.sumQ*BUFLEN - A.sum*A.sum )/(BUFLEN*BUFLEN), &A.res ) ){
 		acceleration_.put( A.res );
 	}
 
 
-	if(ARM_MATH_SUCCESS == arm_sqrt_f32( ( V.sumQ*LEN - V.sum*V.sum )/(LEN*LEN), &V.res ) ){
+	if(ARM_MATH_SUCCESS == arm_sqrt_f32( ( V.sumQ*BUFLEN - V.sum*V.sum )/(BUFLEN*BUFLEN), &V.res ) ){
 		velocity_.put( V.res*0.0659 );
 	}
 

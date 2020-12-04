@@ -83,40 +83,40 @@ PCD_HandleTypeDef hpcd_USB_OTG_FS;
 WWDG_HandleTypeDef hwwdg;
 
 osThreadId defaultTaskHandle;
-uint32_t defaultTaskBuffer[ 256 ];
+uint32_t defaultTaskBuffer[ 256 ]__attribute__((section(".ccmram")));
 osStaticThreadDef_t defaultTaskControlBlock;
 osThreadId myTask_S1Handle;
-uint32_t myTask_S1Buffer[ 500 ];
-osStaticThreadDef_t myTask_S1ControlBlock;
-osThreadId myTask_S2Handle;
-uint32_t myTask_S2Buffer[ 500 ];
-osStaticThreadDef_t myTask_S2ControlBlock;
-osThreadId myTaskModbusHandle;
-uint32_t myTaskModbusBuffer[ 2048 ];
-osStaticThreadDef_t myTaskModbusControlBlock;
-osTimerId myTimerBUT2Handle;
-osStaticTimerDef_t myTimerBUT2ControlBlock;
-osTimerId myTimerBUT1Handle;
-osStaticTimerDef_t myTimerBUT1ControlBlock;
-osMutexId myMutex_SPI1Handle;
-osStaticMutexDef_t myMutexSPI1ControlBlock;
-osMutexId myMutexI2C1Handle;
-osStaticMutexDef_t myMutexI2C1ControlBlock;
-osSemaphoreId myCountingSem_S01Handle;
-osStaticSemaphoreDef_t myCountingSem_S01ControlBlock;
-osSemaphoreId myCountingSem_S02Handle;
-osStaticSemaphoreDef_t myCountingSem_S05;
-osSemaphoreId myCountingSemBUT1Handle;
-osStaticSemaphoreDef_t myCountingSemBUT1ControlBlock;
-osSemaphoreId myCountingSemBUT2Handle;
-osStaticSemaphoreDef_t myCountingSemBUT2ControlBlock;
-osSemaphoreId myCountingSemMBhandle;
-osStaticSemaphoreDef_t myCountingSemMBcontrolBlock;
+uint32_t myTask_S1Buffer[ 512 ]__attribute__((section(".ccmram")));
+osStaticThreadDef_t myTask_S1ControlBlock __attribute__((section(".ccmram")));
+osThreadId myTask_S2Handle __attribute__((section(".ccmram")));
+uint32_t myTask_S2Buffer[ 512 ]__attribute__((section(".ccmram")));
+osStaticThreadDef_t myTask_S2ControlBlock __attribute__((section(".ccmram")));
+osThreadId myTaskModbusHandle __attribute__((section(".ccmram")));
+uint32_t myTaskModbusBuffer[ 512 ]__attribute__((section(".ccmram")));
+osStaticThreadDef_t myTaskModbusControlBlock __attribute__((section(".ccmram")));
+osTimerId myTimerBUT2Handle __attribute__((section(".ccmram")));
+osStaticTimerDef_t myTimerBUT2ControlBlock __attribute__((section(".ccmram")));
+osTimerId myTimerBUT1Handle __attribute__((section(".ccmram")));
+osStaticTimerDef_t myTimerBUT1ControlBlock __attribute__((section(".ccmram")));
+osMutexId myMutex_SPI1Handle __attribute__((section(".ccmram")));
+osStaticMutexDef_t myMutexSPI1ControlBlock __attribute__((section(".ccmram")));
+osMutexId myMutexI2C1Handle __attribute__((section(".ccmram")));
+osStaticMutexDef_t myMutexI2C1ControlBlock __attribute__((section(".ccmram")));
+osSemaphoreId myCountingSem_S01Handle __attribute__((section(".ccmram")));
+osStaticSemaphoreDef_t myCountingSem_S01ControlBlock __attribute__((section(".ccmram")));
+osSemaphoreId myCountingSem_S02Handle __attribute__((section(".ccmram")));
+osStaticSemaphoreDef_t myCountingSem_S05 __attribute__((section(".ccmram")));
+osSemaphoreId myCountingSemBUT1Handle __attribute__((section(".ccmram")));
+osStaticSemaphoreDef_t myCountingSemBUT1ControlBlock __attribute__((section(".ccmram")));
+osSemaphoreId myCountingSemBUT2Handle __attribute__((section(".ccmram")));
+osStaticSemaphoreDef_t myCountingSemBUT2ControlBlock __attribute__((section(".ccmram")));
+osSemaphoreId myCountingSemMBhandle __attribute__((section(".ccmram")));
+osStaticSemaphoreDef_t myCountingSemMBcontrolBlock __attribute__((section(".ccmram")));
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
 
 uint8_t	but1pressed = 0, but2pressed = 0,  service = 0;
- SignalChenal SignalChenal::instances[]={SignalChenal(),SignalChenal()};
+SignalChenal  SignalChenal::instances[]={SignalChenal(),SignalChenal()};
  EEPROM_t EEPROM=EEPROM_t();
  void PWM(float  velocity, float min, float max);
 /* USER CODE END PV */
@@ -769,8 +769,7 @@ static void MX_TIM1_Init(void)
 
   TIM_ClockConfigTypeDef sClockSourceConfig = {0};
   TIM_MasterConfigTypeDef sMasterConfig = {0};
-  TIM_OC_InitTypeDef sConfigOC = {0};
-  TIM_BreakDeadTimeConfigTypeDef sBreakDeadTimeConfig = {0};
+
   /* USER CODE BEGIN TIM1_Init 1 */
 
   /* USER CODE END TIM1_Init 1 */
@@ -1311,6 +1310,7 @@ void setCoef( uint8_t CHn , uint16_t Coef )
      pin = SS_3_Pin;
      port = SS_3_GPIO_Port;
      break;
+   default:for(;;);
   }
   uint16_t txData,rxData;
 //for(;;)
@@ -1478,11 +1478,11 @@ const uint32_t BaudRate[] = {115200, 4800, 9600, 19200, 38400, 57600, 115200};
   * @retval None
   */
 //uint32_t	runCnt = 0;
-static uint8_t  testVelocity (float32_t v,float32_t porog1, float32_t porog2){
-uint8_t ret;
-	static uint32_t delay = 0X5F;
+static uint8_t  testVelocity (float32_t v,float32_t porog1, float32_t porog2 ,uint32_t &relay_delay){
+uint8_t ret=0;
 
-					if(delay)delay--;
+
+					if(relay_delay)relay_delay--;
 					else{ if(porog1 != 0 &&( v > porog1 )){
 					 		  HAL_GPIO_WritePin(RELAY_1_GPIO_Port, RELAY_1_Pin, GPIO_PIN_SET);
 					 	 ret=(1<<4);//led(4,false,false);
@@ -1508,6 +1508,7 @@ void StartDefaultTask(void const * argument)
 {
 
   /* USER CODE BEGIN 5 */
+	 uint32_t relay_delay=EEPROM.relayDelay();
 	extern uint32_t port_IO[3];
 	if(HAL_DMA_Start( &hdma_tim8_up, (uint32_t)&port_IO, (uint32_t)&GPIOD->BSRR, 3 ) != HAL_OK)
 	{
@@ -1546,8 +1547,8 @@ void StartDefaultTask(void const * argument)
 				service=0;
 		  }
 		  uint8_t msk;
-		  msk=testVelocity( SignalChenal::getInstance(ADC1)->getVelocity(), (float32_t)EEPROM.porog11.get()/10, (float32_t)EEPROM.porog12.get()/10);
-		  msk|=testVelocity( SignalChenal::getInstance(ADC2)->getVelocity(), (float32_t)EEPROM.porog21.get()/10, (float32_t)EEPROM.porog22.get()/10);
+		  msk=testVelocity( SignalChenal::getInstance(ADC1)->getVelocity(), EEPROM.porog11.get()/10.f, EEPROM.porog12.get()/10.f, relay_delay);
+		  msk|=testVelocity( SignalChenal::getInstance(ADC2)->getVelocity(),EEPROM.porog21.get()/10.f,EEPROM.porog22.get()/10.f,relay_delay);
 		  if(!menu.isEdit)
 			  scale(SignalChenal::getInstance( ( (menu.getNch()==1)?ADC1:ADC2) )->getVelocity()*1000/( (menu.getNch()==1)?EEPROM.range1():EEPROM.range2() ),msk,  [](uint16_t ms){osDelay(ms);});
 
@@ -1558,9 +1559,9 @@ void StartDefaultTask(void const * argument)
 	  }else
 	  --tout;
 
-	  osDelay(300);
+	  osDelay(200);
 
-	  if(UartTimeOut++ > 4){
+	  if(UartTimeOut++ > 6){
 		   if(	HAL_UART_DMAStop(&huart1)!= HAL_OK) {
 				  Error_Handler();
 		   }
@@ -1588,7 +1589,7 @@ void StartTask_S1(void const * argument)
 {
   /* USER CODE BEGIN StartTask_S1 */
 	 HAL_DMA_RegisterCallback(&hdma_adc1,HAL_DMA_XFER_M1CPLT_CB_ID,SignalChenal::HAL_ADC_M1ConvCpltCallback);
-	if ( HAL_OK != HAL_ADC_Start_DMA( &hadc1, reinterpret_cast<uint32_t *>(SignalChenal::getInstance(&hadc1)->buffer1), LEN ))
+	if ( HAL_OK != HAL_ADC_Start_DMA( &hadc1, (uint32_t *)(SignalChenal::getInstance(&hadc1)->buffer1), LEN ))
 	// if ( HAL_OK != HAL_ADC_Start(&hadc1))
 	 {
 	     _Error_Handler(__FILE__, __LINE__);
@@ -1670,13 +1671,14 @@ void StartTask_S2(void const * argument)
 {
   /* USER CODE BEGIN StartTask_S2 */
 	 HAL_DMA_RegisterCallback(&hdma_adc2,HAL_DMA_XFER_M1CPLT_CB_ID,SignalChenal::HAL_ADC_M1ConvCpltCallback);
-	if ( HAL_OK != HAL_ADC_Start_DMA( &hadc2, reinterpret_cast<uint32_t *>(SignalChenal::getInstance(&hadc2)->buffer1), LEN ))
+	if ( HAL_OK != HAL_ADC_Start_DMA( &hadc2, (uint32_t *)(SignalChenal::getInstance(&hadc2)->buffer1), LEN ))
 	// if ( HAL_OK != HAL_ADC_Start(&hadc1))
 	 {
 	     _Error_Handler(__FILE__, __LINE__);
 	  }
 
 	uint32_t b1 = reinterpret_cast<uint32_t>(&SignalChenal::getInstance(&hadc2)->buffer1);
+	//std::memcpy(&SignalChenal::getInstance(&hadc2)->buffer1, &b1, sizeof uint32_t );//Стандартный благословенный метод для каламбуров типизации в C и C ++ — memcpy.
 	uint32_t b2 = reinterpret_cast<uint32_t>(&SignalChenal::getInstance(&hadc2)->buffer2);
 //	DMA_MultiBufferSetConfig(hdma_adc1, reinterpret_cast<uint32_t>(&(hadc1.Instance->DR)),b1, LEN);
 
@@ -1887,17 +1889,7 @@ void myTimeCallbackBUT2(void const * argument)
 
 			but2pressed = 0;
 		}
-	/*switch(screen.getCurPos()){
-		case 0:
-		case 2: 	screen.moveCurPos(1);
-	break;
-		case 1:
-		case 3: 	screen.moveCurPos(-1);
-	break;
-	}
 
-
-    // osTimerStart(myTimerBUT1Handle, 10 );
   /* USER CODE END myTimeCallbackBUT2 */
 }
 
@@ -1941,14 +1933,7 @@ void myTimerCalbakBUT1(void const * argument)
 	}
 	else
 		but1pressed = 0;
-/*	switch(screen.getCurPos()){
-		case 0:
-		case 1: 	screen.moveCurPos(2);
-	break;
-		case 2:
-		case 3: 	screen.moveCurPos(-2);
-	break;
-	}
+
   /* USER CODE END myTimerCalbakBUT1 */
 }
 

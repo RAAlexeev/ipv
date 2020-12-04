@@ -3,6 +3,7 @@
 #define __MENU_H__
 #include "main.h"
 #include "arm_math.h"
+#include "myutils.hpp"
 extern void led(uint8_t n, bool on, bool resetDelayMenuShow=true);
 extern void scale(uint16_t percent, uint8_t mask=0xFF, void delay(uint16_t ms)=NULL);
 extern class Screen {
@@ -28,6 +29,8 @@ public:
 typedef void (* const Action)(float32_t val);
 
 typedef float32_t (* const GetValue)();
+
+
 
 class MenuItem {
 
@@ -132,7 +135,7 @@ public:
 		if (curIndex > 3) {//edit
 			int8_t power = digPos - ((getCurentItem()->getValue(false)< 10 )?2:1);
 
-			getCurentItem()->setValue(getCurentItem()->getValue(false)+pow(10,power));
+			getCurentItem()->setValue(getCurentItem()->getValue(false)+myUtils::pow10(power));
 
 		} else{
 

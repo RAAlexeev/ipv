@@ -57,7 +57,7 @@ void scale(uint16_t percent, uint8_t mask,void delay(uint16_t ms) = NULL){
 if(blink)
 		 port_IO[2] = ( p|mask) | ((0x200 | ( 0xFF & (~p))) << 16) | GPIO_BSRR_BS10;
 else
-	port_IO[2] =  ( p & (~mask)  | (((0x200| mask) ) | ( 0xFF & (~p))) << 16) | GPIO_BSRR_BS10;
+	port_IO[2] =  (( p & (~mask) ) | ( (( 0x200| mask)  | ( 0xFF & (~p))) << 16) ) | GPIO_BSRR_BS10;
 		 blink =!blink;
 /*	for(uint16_t i=0xF;i;i--){
 		port_IO[2] = (GPIO_BSRR_BS10<<16)  & ~GPIO_BSRR_BS10;
