@@ -31,10 +31,14 @@ public:
 	void * swBuffer();
 	void calc();
 	inline float32_t getVelocity()const {
-		return velocity_.average();
+		float32_t v = velocity_.average();
+		if(v < 0.41)return 0;
+		return v;
 	}
 	inline float32_t getAcceleration()const {
-		return acceleration_.average();
+		float32_t a = acceleration_.average();
+		if(a < 0.155)return 0;
+		return a;
 	}
 	static  SignalChenal*  getInstance(void* hadc){
 		extern ADC_HandleTypeDef hadc1;

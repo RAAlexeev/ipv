@@ -13,11 +13,16 @@
 
 #include <Filter.h>
 
-float32_t const Filter::coaf[10] __attribute__((section(".ccmram")))={b10,b11,b12,-a11,-a12,b20,b21,b22,-a21,-a22};
-
+float32_t const Filter::coaf[5*N] __attribute__((section(".ccmram")))={
+			Sect0.b0,Sect0.b1,Sect0.b2,-Sect0.a1,-Sect0.a2,
+			Sect1.b0,Sect1.b1,Sect1.b2,-Sect1.a1,-Sect1.a2,
+			Sect2.b0,Sect2.b1,Sect2.b2,-Sect2.a1,-Sect2.a2,
+			Sect3.b0,Sect3.b1,Sect3.b2,-Sect3.a1,-Sect3.a2,
+};
+///
 Filter::Filter() {
 	// TODO Auto-generated constructor stub
-	arm_biquad_cascade_df1_init_f32(&S, 2,(float32_t*)coaf, state);
+	arm_biquad_cascade_df1_init_f32(&S, N,(float32_t*)coaf, state);
 }
 
 Filter::~Filter() {

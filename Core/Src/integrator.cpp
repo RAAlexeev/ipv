@@ -9,7 +9,7 @@
 #include <array>
 #define FILTER
 #undef DEBUG
-#define _DEBUG(x)// x
+#define _DEBUG(x) x
 extern "C"  void my_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
 	SignalChenal::HAL_ADC_ConvCpltCallback(hadc);
 }
@@ -50,8 +50,8 @@ inline void * SignalChenal::swBuffer(){
 }
 
 void SignalChenal::calc() {
-#define k (0.9965f)
-#define N (16000)
+#define k (0.9995f)
+
 //	_DEBUG(myUtils::ITM_SendStr(getInstance(&hadc1)==this?"1":"2"));
 	//uint16_t *srcInt = static_cast<uint16_t *>( _src);
 	float *src=buffer;
@@ -95,8 +95,9 @@ void SignalChenal::calc() {
 	 float32_t a, _y=y;
 
 	for(uint16_t i = 0; i < BUFLEN; i++ ){
-			a = bufOut_f32[i] * 9.82E+040;//0.668E+40;
-			y = a + _y*k;
+			a = bufOut_f32[i] * 9.82E+041 * 2.365;//0.668E+40;
+
+			_y = a + _y*k;
 
 
 			A.sum += a;
@@ -115,14 +116,14 @@ void SignalChenal::calc() {
 
 
 	if(ARM_MATH_SUCCESS == arm_sqrt_f32( ( V.sumQ*BUFLEN - V.sum*V.sum )/(BUFLEN*BUFLEN), &V.res ) ){
-		velocity_.put( V.res*0.0659 );
+		velocity_.put( V.res*0.0653 );
 	}
 
 
 
 
-		_DEBUG(uint16_t c =  uxSemaphoreGetCount((getInstance(&hadc1)==this)?myCountingSem_S01Handle:myCountingSem_S02Handle));
-		_DEBUG(c+=0x30);
+		_DEBUG(uint32_t c = { uxSemaphoreGetCount((getInstance(&hadc1)==this)?myCountingSem_S01Handle:myCountingSem_S02Handle))};
+		_DEBUG(c+=0x30|'\n'<<8);
 
 		_DEBUG(myUtils::ITM_SendStr(( char*)( &c )));
 
