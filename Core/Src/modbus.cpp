@@ -29,7 +29,7 @@ uint8_t mb_buf_out_count;
 uint8_t* p_mb_buf_in = mb_buf_in;
 #define mb_buf_in p_mb_buf_in
 inline uint16_t mb_reg(uint32_t index, uint16_t value=0xFFFF ){
-	union fu_t{
+	static union fu_t{
 		float32_t f;
 		uint32_t ui;
 	}b;
@@ -50,12 +50,12 @@ if(value==0xFFFF)
 		case 15: return EEPROM.range2();
 		case 16: b.f = SignalChenal::getInstance(ADC1)->getAcceleration();
 			return (uint16_t)(b.ui>>16);
-		case 17: b.f = SignalChenal::getInstance(ADC1)->getAcceleration();
+		case 17:// b.f = SignalChenal::getInstance(ADC1)->getAcceleration();
 			return (uint16_t)(b.ui);
 
 		case 18: b.f = SignalChenal::getInstance(ADC1)->getVelocity();
 			return (uint16_t)(b.ui>>16);
-		case 19: b.f = SignalChenal::getInstance(ADC1)->getVelocity();
+		case 19: //b.f = SignalChenal::getInstance(ADC1)->getVelocity();
 			return (uint16_t)(b.ui);
 
 		case 20: b.f = SignalChenal::getInstance(ADC2)->getAcceleration();

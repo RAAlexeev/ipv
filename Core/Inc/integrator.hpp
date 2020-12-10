@@ -31,8 +31,9 @@ public:
 	void * swBuffer();
 	void calc();
 	inline float32_t getVelocity()const {
+
 		float32_t v = velocity_.average();
-		if(v < 0.41)return 0;
+		if(v < 0.5)return 0;
 		return v;
 	}
 	inline float32_t getAcceleration()const {

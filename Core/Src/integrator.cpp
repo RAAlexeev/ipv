@@ -111,12 +111,13 @@ void SignalChenal::calc() {
 	y=_y;
 	//free( bufOut_f32 );
 	if(ARM_MATH_SUCCESS == arm_sqrt_f32( ( A.sumQ*BUFLEN - A.sum*A.sum )/(BUFLEN*BUFLEN), &A.res ) ){
-		acceleration_.put( A.res );
+		acceleration_.put( A.res > 0.25?A.res:0 );
 	}
 
 
 	if(ARM_MATH_SUCCESS == arm_sqrt_f32( ( V.sumQ*BUFLEN - V.sum*V.sum )/(BUFLEN*BUFLEN), &V.res ) ){
-		velocity_.put( V.res*0.0653 );
+		 V.res*=0.0653;
+		velocity_.put( V.res > 0.5?V.res:0 );
 	}
 
 

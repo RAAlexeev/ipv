@@ -465,7 +465,7 @@
 								</inputType>
 							</tool>
 							<tool id="com.atollic.truestudio.exe.debug.toolchain.secoutput.1619190311" name="Other" superClass="com.atollic.truestudio.exe.debug.toolchain.secoutput">
-								<option id="com.atollic.truestudio.secoutput.general.convert.254335623" superClass="com.atollic.truestudio.secoutput.general.convert" useByScannerDiscovery="false" value="true" valueType="boolean"/>
+								<option id="com.atollic.truestudio.secoutput.general.convert.254335623" name="Convert build output" superClass="com.atollic.truestudio.secoutput.general.convert" useByScannerDiscovery="false" value="true" valueType="boolean"/>
 							</tool>
 							<tool id="com.atollic.truestudio.ar.base.689763252" name="Archiver" superClass="com.atollic.truestudio.ar.base"/>
 						</toolChain>
