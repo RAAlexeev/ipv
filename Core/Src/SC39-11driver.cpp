@@ -76,19 +76,22 @@ inline uint8_t getDig(float32_t val, int8_t dig){
 	return static_cast<uint8_t>(static_cast<uint32_t>(val)/pow10 % 10);
 }
 
-static struct{bool d1, d2;} strob;
+static struct{bool d1, d2,dot1,dot2;} strob;
 
 
 void SC39_show(float32_t val, uint8_t strobe ) {
 
-	uint8_t d1, d2; //intPart = static_cast<uint8_t>(round(n*10)/10);
-
+	uint8_t d1, d2;
+	 if( val < 0 )
+		 strob.dot1=!strob.dot1;
+	 else
+		 strob.dot1=false;
 	bool dot1=false,dot2=false;
-	val=round(val*10)/10;
-
+	val=std::abs(round(val*10)/10);
+	if( val == 0 ) strob.dot1=false;
 	if (val < 10) {
-		d1=	(val < 0)?'-':getDig(val*10,1);
-		d2 = getDig(std::abs(val)*10,0);//round((n - intPart) * 10);
+		d1=	getDig(val*10,1);
+		d2 = getDig(val*10,0);//round((n - intPart) * 10);
 		dot1=true;
 	} else if (val < 100) {
 		d1=	getDig(val,1);
@@ -116,10 +119,11 @@ void SC39_show(float32_t val, uint8_t strobe ) {
 	};
 
 
-	d1=(strob.d1)?0:SC39_get_dig(d1,dot1);
-	d2=(strob.d2)?0:SC39_get_dig(d2,dot2);
-	port_IO[0] = ((0x400 | ((uint8_t) ~d1)) << 16) | d1 | GPIO_BSRR_BS8;
-	port_IO[1] = ((0x100 | ((uint8_t) ~d2)) << 16) | d2 | GPIO_BSRR_BS9;
+
+	d1=(strob.d1)?0:SC39_get_dig(d1,dot1&&!strob.dot1);
+	d2=(strob.d2)?0:SC39_get_dig(d2,dot2&&!strob.dot2);
+	port_IO[0] = ((0x400 | (~d1)) << 16) | d1 | GPIO_BSRR_BS8;
+	port_IO[1] = ((0x100 | (~d2)) << 16) | d2 | GPIO_BSRR_BS9;
 }
 
 void ____SC39_showDig(uint8_t dig, GPIO_PinState dp, uint8_t hg) {

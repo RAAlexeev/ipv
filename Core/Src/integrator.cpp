@@ -6,10 +6,10 @@
 #include "SC39-11driver.h"
 #include "integrator.hpp"
 #include "cmsis_os.h"
-#include <array>
+
 #define FILTER
 #undef DEBUG
-#define _DEBUG(x) x
+#define _DEBUG(x) // x
 extern "C"  void my_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
 	SignalChenal::HAL_ADC_ConvCpltCallback(hadc);
 }
@@ -27,9 +27,7 @@ void SignalChenal::HAL_ADC_M1ConvCpltCallback(DMA_HandleTypeDef * 	hdma){
 	  osSemaphoreRelease((hdma->Parent == &hadc1)?myCountingSem_S01Handle:myCountingSem_S02Handle);
 }
 
-SignalChenal::SignalChenal(){
 
-}
 
 /*void printDouble(double v, int decimalDigits)
 {
@@ -95,7 +93,7 @@ void SignalChenal::calc() {
 	 float32_t a, _y=y;
 
 	for(uint16_t i = 0; i < BUFLEN; i++ ){
-			a = bufOut_f32[i] * 9.82E+041 * 2.365;//0.668E+40;
+			a = bufOut_f32[i] * 9.82E+041 * 2.36;//0.668E+40;
 
 			_y = a + _y*k;
 
@@ -111,19 +109,19 @@ void SignalChenal::calc() {
 	y=_y;
 	//free( bufOut_f32 );
 	if(ARM_MATH_SUCCESS == arm_sqrt_f32( ( A.sumQ*BUFLEN - A.sum*A.sum )/(BUFLEN*BUFLEN), &A.res ) ){
-		acceleration_.put( A.res > 0.25?A.res:0 );
+		acceleration_.put( A.res > 0?A.res:0 );
 	}
 
 
 	if(ARM_MATH_SUCCESS == arm_sqrt_f32( ( V.sumQ*BUFLEN - V.sum*V.sum )/(BUFLEN*BUFLEN), &V.res ) ){
 		 V.res*=0.0653;
-		velocity_.put( V.res > 0.5?V.res:0 );
+		velocity_.put( V.res > 0?V.res:0 );
 	}
 
 
 
 
-		_DEBUG(uint32_t c = { uxSemaphoreGetCount((getInstance(&hadc1)==this)?myCountingSem_S01Handle:myCountingSem_S02Handle))};
+		_DEBUG(uint32_t c = { uxSemaphoreGetCount((getInstance(&hadc1)==this)?myCountingSem_S01Handle:myCountingSem_S02Handle)});
 		_DEBUG(c+=0x30|'\n'<<8);
 
 		_DEBUG(myUtils::ITM_SendStr(( char*)( &c )));

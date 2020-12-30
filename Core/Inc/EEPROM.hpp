@@ -107,6 +107,8 @@ public:
 	VarEE<uint16_t> uartSpeed = VarEE<uint16_t>();
 	VarEE<uint16_t> uartParam_mbAddr = VarEE<uint16_t>();
 	VarEE<uint16_t> relayDelay = VarEE<uint16_t>();
+	VarEE<int16_t> K1 = VarEE<int16_t>();
+	VarEE<int16_t> K2 = VarEE<int16_t>();
 	void init(){
 		if(ifThirstRun()){
 			reset();
@@ -118,13 +120,14 @@ public:
 		porog12.set(0);
 		porog21.set(0);
 		porog22.set(0);
-		range1.set(200);
-		range2.set(200);
+		range1.set(10);
+		range2.set(10);
 		kA4_20.set(0);
-		kB4_20.set(10);
+		kB4_20.set(0);
 		uartSpeed.set(11520);
 		relayDelay.set(100);
-
+		K1.set(0);
+		K2.set(0);
 	union{	mbAddrUartParam_t p;
 
 			uint16_t raw;

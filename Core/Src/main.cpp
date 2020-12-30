@@ -116,8 +116,9 @@ osStaticSemaphoreDef_t myCountingSemMBcontrolBlock __attribute__((section(".ccmr
 /* Private variables ---------------------------------------------------------*/
 
 uint8_t	but1pressed = 0, but2pressed = 0,  service = 0;
-SignalChenal  SignalChenal::instances[]={SignalChenal(),SignalChenal()};
- EEPROM_t EEPROM=EEPROM_t();
+EEPROM_t EEPROM=EEPROM_t();
+SignalChenal  SignalChenal::instances[]={SignalChenal(EEPROM.K1,EEPROM.range1),SignalChenal(EEPROM.K1,EEPROM.range1)};
+
  void PWM(float  velocity, float min, float max);
 /* USER CODE END PV */
 
@@ -516,7 +517,7 @@ static void MX_ADC2_Init(void)
   hadc2.Init.DiscontinuousConvMode = DISABLE;
   hadc2.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_FALLING;
   hadc2.Init.ExternalTrigConv = ADC_EXTERNALTRIGCONV_T2_TRGO;
-  hadc2.Init.DataAlign = ADC_DATAALIGN_RIGHT;
+  hadc2.Init.DataAlign = ADC_DATAALIGN_LEFT;
   hadc2.Init.NbrOfConversion = 1;
   hadc2.Init.DMAContinuousRequests = ENABLE;
   hadc2.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
@@ -1238,40 +1239,26 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-void Screen::display(){
-		switch(screen.getCurPos()){
-			case 0:
-				SC39_show(SignalChenal::getInstance(&hadc1)->getVelocity());
-				break;
-			case 1:
-				SC39_show( SignalChenal::getInstance(&hadc2)->getVelocity(), true );
-				break;
-			case 2:
-				SC39_show( SignalChenal::getInstance(&hadc1)->getAcceleration() );
-				break;
-			case 3:
-				SC39_show( SignalChenal::getInstance(&hadc2)->getAcceleration(), true );
-				break;
-		}
-	}
+
 
 void testMaxVelocity(float * velocity,uint8_t * tOut, float max , GPIO_TypeDef * GPIO_port, uint16_t GPIO_pin)
 {
   if ( *velocity <  max ) 
     *tOut = 10;
   else 
-    if (!--tOut)
+    if (--tOut == 0)
     {
       *tOut = 10;
       HAL_GPIO_WritePin(GPIO_port, GPIO_pin, GPIO_PIN_RESET);
     } 
 }
 
-void PWM(float32_t velocity,  uint16_t max)
+void PWM(float32_t velocity,  float32_t max)
 {
+#define SENS (10)
 	uint32_t ar =__HAL_TIM_GET_AUTORELOAD(&htim3);
-	float32_t dc = velocity*(ar-ar/5)/(10*max)+ar*serviceMenu.items[1].getValue(false)/200;
-  uint16_t dutyCycle = (uint16_t)(dc+ar/5+ar*serviceMenu.items[0].getValue(false)/200);
+	float32_t dc = velocity*(ar - ar/5)/max *(1+serviceMenu.items[1].getValue(false)/SENS);
+	uint16_t dutyCycle = (uint16_t)(dc + ar/5 + ar*serviceMenu.items[0].getValue(false)/SENS);
 
 //	uint16_t dutyCycle= 0x00FF;
   __HAL_TIM_SET_COMPARE( &htim3, TIM_CHANNEL_1, dutyCycle );
@@ -1469,6 +1456,41 @@ const uint32_t BaudRate[] = {115200, 4800, 9600, 19200, 38400, 57600, 115200};
 
 }
 
+void relay1(bool on){
+	  HAL_GPIO_WritePin(RELAY_1_GPIO_Port, RELAY_1_Pin,on?GPIO_PIN_SET:GPIO_PIN_RESET);
+}
+
+void relay2(bool on){
+
+	  HAL_GPIO_WritePin(RELAY_2_GPIO_Port, RELAY_2_Pin,on?GPIO_PIN_SET:GPIO_PIN_RESET);
+}
+
+uint16_t outCtrl(uint16_t _codeActivation = 0xFFFF){
+
+	static uint16_t codeActivation = 0;
+
+	if( _codeActivation != 0xFFFF )
+		codeActivation = _codeActivation;
+
+	switch(codeActivation){
+	case 4320:
+		relay1(false);relay2(false);
+		return codeActivation;
+
+	case 4321:
+		relay1(true);
+		return codeActivation;
+
+	case 4322:
+		relay2(true);
+		return codeActivation;
+
+	case 5555:
+			return codeActivation;
+	}
+	return 0;
+}
+
 /* USER CODE END 4 */
 
 /* USER CODE BEGIN Header_StartDefaultTask */
@@ -1484,18 +1506,21 @@ uint8_t ret=0;
 
 					if(relay_delay)relay_delay--;
 					else{ if(porog1 != 0 &&( v > porog1 )){
-					 		  HAL_GPIO_WritePin(RELAY_1_GPIO_Port, RELAY_1_Pin, GPIO_PIN_SET);
-					 	 ret=(1<<4);//led(4,false,false);
+							if(!outCtrl()||outCtrl()==555)
+								relay1(true);
+							ret=(1<<4);//led(4,false,false);
 					 	 }else if( v < (porog1 - v/10)){
-					 		 	 HAL_GPIO_WritePin(RELAY_1_GPIO_Port, RELAY_1_Pin, GPIO_PIN_RESET);
+					 		 if(!outCtrl())
+					 			 relay1(false);
 					 		 	}
 
 					 	 if(porog2 != 0 &&( v > porog2 )){
-						 	 HAL_GPIO_WritePin(RELAY_2_GPIO_Port, RELAY_2_Pin, GPIO_PIN_SET);
-					 		ret|=(1<<5);//led(4,false,false);
+					 		 if(!outCtrl()||outCtrl()==555)
+					 			 relay2(true);
+					 	 	 ret|=(1<<5);//led(4,false,false);
 						 }else if( v < (porog2 - v/10)){
-						 		 HAL_GPIO_WritePin(RELAY_2_GPIO_Port, RELAY_2_Pin, GPIO_PIN_RESET);
-
+							 if(!outCtrl())
+								relay2(false);
 						 	 	}
 					};
 
@@ -1536,7 +1561,16 @@ void StartDefaultTask(void const * argument)
 	  if(service >= 5){
 
 		  serviceMenu.display();
-		  PWM(serviceMenu.getCurentIndex()?(serviceMenu.curCH?EEPROM.range1():EEPROM.range2()):0,(serviceMenu.curCH?EEPROM.range1():EEPROM.range2())/10);
+		 switch( serviceMenu.getCurentIndex() ){
+			 case 0:PWM(0,EEPROM.range1()/10.f);
+			 break;
+			 case 1:PWM(EEPROM.range1()/10.f,EEPROM.range1()/10.f);
+			 break;
+			default:
+				  if(SignalChenal::getInstance(ADC1)->getVelocity() > SignalChenal::getInstance(ADC2)->getVelocity()){
+					PWM(SignalChenal::getInstance(ADC1)->getVelocity(),EEPROM.range1()/10.f);
+				  }else PWM(SignalChenal::getInstance(ADC2)->getVelocity(),EEPROM.range2()/10.f);
+		 }
 	  } else if(service==0||tout==0){
 		  if(onlyOne){
 				led(6,false);
@@ -1549,12 +1583,14 @@ void StartDefaultTask(void const * argument)
 		  uint8_t msk;
 		  msk=testVelocity( SignalChenal::getInstance(ADC1)->getVelocity(), EEPROM.porog11.get()/10.f, EEPROM.porog12.get()/10.f, relay_delay);
 		  msk|=testVelocity( SignalChenal::getInstance(ADC2)->getVelocity(),EEPROM.porog21.get()/10.f,EEPROM.porog22.get()/10.f,relay_delay);
+		  extern void scale(uint16_t percent, uint8_t mask,void delay(uint16_t ms));
 		  if(!menu.isEdit)
-			  scale(SignalChenal::getInstance( ( (menu.getNch()==1)?ADC1:ADC2) )->getVelocity()*1000/( (menu.getNch()==1)?EEPROM.range1():EEPROM.range2() ),msk,  [](uint16_t ms){osDelay(ms);});
+			  scale(SignalChenal::getInstance( ( (menu.getNch()==1)?ADC1:ADC2) )->getVelocity()*50/( (menu.getNch()==1)?EEPROM.range1():EEPROM.range2() ),msk,  [](uint16_t ms){osDelay(ms);});
 
 		  if(SignalChenal::getInstance(ADC1)->getVelocity() > SignalChenal::getInstance(ADC2)->getVelocity()){
 			PWM(SignalChenal::getInstance(ADC1)->getVelocity(),EEPROM.range1()/10);
 		  }else PWM(SignalChenal::getInstance(ADC2)->getVelocity(),EEPROM.range2()/10);
+
 		  menu.display();
 	  }else
 	  --tout;
@@ -1569,7 +1605,7 @@ void StartDefaultTask(void const * argument)
 				  Error_Handler();
 			}
 		if(	HAL_UART_Receive_IT(&huart1,mb_buf_in,1) != HAL_OK) {
-
+			  Error_Handler();
 		}else UartTimeOut =0;
 	  }
   }
@@ -1737,25 +1773,7 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart){
  void HAL_UART_AbortTransmitCpltCallback(UART_HandleTypeDef *huart){
 	 HAL_UART_TxCpltCallback(huart);
  }
- /*  static int8_t reciving = 8;
- void HAL_UART_RxHalfCpltCallback(UART_HandleTypeDef *huart){
-	 //if(&huart1==huart)
-	 {
 
-			 if((mb_buf_in[1]==15)||(mb_buf_in[1]==16)){
-				 reciving =__HAL_DMA_GET_COUNTER(huart1.hdmarx)+mb_buf_in[6]+1;
-				 __HAL_DMA_SET_COUNTER(huart1.hdmarx,reciving);
-
-			 }//else{
-			//	int8_t n = __HAL_DMA_GET_COUNTER(huart1.hdmarx)-4;
-		//	//	 __HAL_DMA_SET_COUNTER(huart1.hdmarx,2);
-			// }
-			 	if (osSemaphoreRelease(myCountingSemMBhandle)!= osOK){
-				  Error_Handler();
-				}
-	 }
-
- }*/
  void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
 	  if(HAL_UART_Receive_DMA(&huart1,mb_buf_in+1,255) != HAL_OK) {
 		  Error_Handler();
@@ -1857,6 +1875,7 @@ void myTimeCallbackBUT2(void const * argument)
 	//if(osOK != osTimerStop(myTimerBUT2Handle)){
 //		 Error_Handler();
 //	}
+	but2pressed++;
 	if (service?serviceMenu.doubleBtn(but1pressed,but2pressed):menu.doubleBtn(but1pressed,but2pressed)) {
 		if(osOK != osTimerStart(myTimerBUT2Handle, 200)){
 				 Error_Handler();
@@ -1876,7 +1895,7 @@ void myTimeCallbackBUT2(void const * argument)
 			//return;
 		}
 
-		but2pressed++;
+
 
 		if ( GPIO_PIN_RESET == HAL_GPIO_ReadPin( BUT2_GPIO_Port, BUT2_Pin ) ){
 
@@ -1900,7 +1919,7 @@ void myTimerCalbakBUT1(void const * argument)
 	/* USER CODE BEGIN myTimerCalbakBUT1 */
  extern uint8_t service;
 
-
+	but1pressed++;
 	if (service?serviceMenu.doubleBtn(but1pressed,but2pressed):menu.doubleBtn(but1pressed,but2pressed)){
 		if(osOK != osTimerStart(myTimerBUT1Handle, 200)){
 				 Error_Handler();
@@ -1908,7 +1927,7 @@ void myTimerCalbakBUT1(void const * argument)
 		return;
 
 	}
-	if(but1pressed==1)
+	if(but1pressed==2)
 		{
 			if(service==0)menu.navigate(true);
 		}
@@ -1923,7 +1942,7 @@ void myTimerCalbakBUT1(void const * argument)
 			//but1pressed=0;
 		//return;
 	}
-	but1pressed++;
+
 	if ( GPIO_PIN_RESET == HAL_GPIO_ReadPin( BUT1_GPIO_Port, BUT1_Pin ) ){
 
 	if(osOK != osTimerStart(myTimerBUT1Handle, 100)){

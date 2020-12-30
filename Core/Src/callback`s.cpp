@@ -22,15 +22,18 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
               
                osTimerStart(myTimerBUT1Handle, 30 );
 
-         } else if( but1pressed > 0 && but1pressed  < 7 ){//кнопка была нажата боле 30мс и  отпущена{
+         } else if( but1pressed > 0){
+        	 serviceMenu.releaseMinus();
+        	 if(  but1pressed  < 7 ){//кнопка была нажата боле 30мс и  отпущена{
 
 
-        	if(service && service < 5)
-       			  service++;
-       		else if(service)
-       			  serviceMenu.minus();
-           	 but1pressed = 0;
-           	 osTimerStop(myTimerBUT1Handle);
+				if(service && service < 5)
+					  service++;
+				else if(service)
+					  serviceMenu.minus();
+				 but1pressed = 0;
+				 osTimerStop(myTimerBUT1Handle);
+        	 }
          }
      break;
 
@@ -39,7 +42,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
          {
             osTimerStart(myTimerBUT2Handle, 30 );
            
-         } else{ //кнопка была отпущена
+         } else{ serviceMenu.releasePlus(); //кнопка была отпущена
            	 osTimerStop(myTimerBUT2Handle);//
            	 extern uint8_t but2pressed;
 

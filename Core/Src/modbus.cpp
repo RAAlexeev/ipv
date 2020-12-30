@@ -29,6 +29,7 @@ uint8_t mb_buf_out_count;
 uint8_t* p_mb_buf_in = mb_buf_in;
 #define mb_buf_in p_mb_buf_in
 inline uint16_t mb_reg(uint32_t index, uint16_t value=0xFFFF ){
+	uint16_t outCtrl(uint16_t x = 0xFFFF);
 	static union fu_t{
 		float32_t f;
 		uint32_t ui;
@@ -40,8 +41,9 @@ if(value==0xFFFF)
 		case 3:return uartMBparam::param.p.stopBit;
 		case 4:return uartMBparam::getAddr();
 		case 5:return EEPROM.relayDelay();
-
-
+		case 6:return EEPROM.K1();
+		case 7:return EEPROM.K2();
+		case 8: return outCtrl();
 		case 10: return EEPROM.porog11();
 		case 11: return EEPROM.porog12();
 		case 12: return EEPROM.range1();
@@ -74,8 +76,9 @@ if(value==0xFFFF)
 			case 3:return uartMBparam::setStopBit(value);
 			case 4:return uartMBparam::setAddr(value);
 			case 5:return EEPROM.relayDelay.set(value);
-
-
+			case 6:return EEPROM.K1.set(value);
+			case 7:return EEPROM.K2.set(value);
+			case 8:return outCtrl(value);
 			case 10: return EEPROM.porog11.set(value);
 			case 11: return EEPROM.porog12.set(value);
 			case 12: return EEPROM.range1.set(value);

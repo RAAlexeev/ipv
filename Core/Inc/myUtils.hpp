@@ -9,7 +9,7 @@
 #define SRC_MYUTILS_HPP_
 #include "stm32f4xx_hal.h"
 #include "main.h"
-
+#include "arm_math.h"
 namespace byteOrder {
 
    inline uint16_t  htons(uint16_t *data);
@@ -30,11 +30,13 @@ namespace byteOrder {
 
 namespace myUtils{
 
-inline uint32_t pow10(uint8_t n){
-	uint32_t ret=0;
-	if(n==0) return 1;
-	while(n--){
+inline float32_t pow10(int8_t n){
+	float32_t ret=1;
+	for(uint8_t i=0; i < abs(n) ; i++){
 		ret *=10;
+	}
+	if(n < 0){
+		ret =1/ret;
 	}
 	return ret;
 }

@@ -7,13 +7,13 @@
 #include "main.h"
  extern volatile uint32_t port_IO[3];
 static  uint16_t ledIsOn=0;
-static  uint16_t delayMenuShow = 20;
+static  uint16_t delayMenuShow = 40;
 
 
 void led(uint8_t n, bool on,  bool resetDelayMenuShow){
 	if (n >= 8)
 		for(;;);
-
+	n=7-n;
 //	uint16_t p = 0;
 
 	if(on){
@@ -25,7 +25,7 @@ void led(uint8_t n, bool on,  bool resetDelayMenuShow){
 		ledIsOn &= ~(1<<n);
 	}
 	if(resetDelayMenuShow){
-		delayMenuShow = 20;
+		delayMenuShow = 40;
 		port_IO[2] = ((( 0x200 | 0xFF ) << 16) |  ledIsOn ) | GPIO_BSRR_BS10;
 	}
 
@@ -49,16 +49,16 @@ void scale(uint16_t percent, uint8_t mask,void delay(uint16_t ms) = NULL){
 	uint16_t diodes=percent*8/100;
 //	if(bleenk){
 
-		 p = (0xFF >> (8-(diodes<=8?diodes:8)));
+	p = (uint8_t)(0xFF << (8-(diodes<=8?diodes:8)));
 	//}
 	//else
 	//	p =( (port_IO[2]&(~ledIsOn)) | (ledIsOn<<16));
-		 static bool  blink;
+static bool  blink;
 if(blink)
 		 port_IO[2] = ( p|mask) | ((0x200 | ( 0xFF & (~p))) << 16) | GPIO_BSRR_BS10;
 else
 	port_IO[2] =  (( p & (~mask) ) | ( (( 0x200| mask)  | ( 0xFF & (~p))) << 16) ) | GPIO_BSRR_BS10;
-		 blink =!blink;
+blink =!blink;
 /*	for(uint16_t i=0xF;i;i--){
 		port_IO[2] = (GPIO_BSRR_BS10<<16)  & ~GPIO_BSRR_BS10;
 		if(delay)delay(i);//osDelay(1);

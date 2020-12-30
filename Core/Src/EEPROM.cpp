@@ -146,7 +146,7 @@ void EEPROM_t::VarEE<T,LENAREA>:: _set(T _val) {
 					_index = 0;
 
 				if (data_get((uint16_t*)(&elem_i), addr + _index * sizeof(T))) {
-					val ^= (_get() ^ elem_i);
+					val ^= (_get(true) ^ elem_i);
 					data_put(addr + _index * sizeof(T), val);
 				}
 				// tested

@@ -5,24 +5,7 @@
 #include "arm_math.h"
 #include "myutils.hpp"
 extern void led(uint8_t n, bool on, bool resetDelayMenuShow=true);
-extern void scale(uint16_t percent, uint8_t mask=0xFF, void delay(uint16_t ms)=NULL);
-extern class Screen {
 
-	uint8_t curPos = 0;
-
-public:
-	inline uint8_t getCurPos() {
-		return curPos;
-	}
-
-	inline void moveCurPos(int8_t mv) {
-		if (curPos + mv >= 0 && curPos + mv <= 3)
-			curPos += mv;
-	};
-
-	void display();
-
-} screen;
 
 #endif
 
@@ -42,10 +25,11 @@ class MenuItem {
 
 public:
 	int16_t def,min,max;
-	uint8_t diode;
-	MenuItem(const GetValue getValue = NULL, const Action setVal = NULL,uint8_t led=0xff,int16_t def=0,int16_t min=0, int16_t max=199,
-			const Action act = NULL) :
-			action(act), setVal(setVal), getVal(getValue), def(def),min(min),max(max) {
+	uint8_t diode,ch;
+
+	MenuItem(const GetValue getValue = NULL, const Action setVal = NULL,uint8_t const led=0xff,int16_t  const def=0,int16_t const min=0, const int16_t max=199,
+			uint8_t ch = 0, const Action act = NULL) :
+			action(act), setVal(setVal), getVal(getValue), def(def),min(min),max(max),ch(ch) {
 			if(led!=0xff ) diode = led;
 	}
 
@@ -61,8 +45,8 @@ public:
 
 	}
 	void saveValue() {
-		led(diode,false);
-		if (setVal)
+
+		if (!isnan(value)&&setVal)
 			setVal(value);
 	}
 };
@@ -86,6 +70,7 @@ public:
 		return (curIndex < 2 )?1:2;
 	}
 	inline bool doubleBtn(uint8_t &btn1, uint8_t &btn2) {
+		if(isEdit)
 		if(btn1 >= 1 && btn2 >= 1){
 			getCurentItem()->setValue(getCurentItem()->def);
 			getCurentItem()->saveValue();
@@ -106,7 +91,9 @@ public:
 					digPos = 1;
 				return;
 			}else{
+				led(items[curIndex].diode,false);
 				getCurentItem()->saveValue();
+
 			if (curIndex == ((maxIndex - 3)/2 + 3 ))
 				curIndex = 4;
 			else if (curIndex == maxIndex - 1)
@@ -115,7 +102,7 @@ public:
 				curIndex++;
 			}
 		}else{
-			led(getCurentItem()->diode,false);
+			led(items[curIndex].diode,false);
 			switch (curIndex) {
 			case 0:
 			case 2:
@@ -194,10 +181,11 @@ extern class ServiceMenu {
 
 	uint8_t curIndex = 0;
 const uint8_t maxIndex;
-bool _firstRun=true;
+	bool clampPlus=false, clampMinus=false;
 public:
 	static MenuItem  items[];
-	static uint8_t curCH;
+
+
 
 
 	 explicit  ServiceMenu(  uint8_t m ):maxIndex(m){
@@ -205,17 +193,27 @@ public:
 		//led(7,true);
 	}
 
-		inline bool doubleBtn(uint8_t &btn1, uint8_t &btn2) {
-			if(btn1 >= 1 && btn2 >= 1){
-				getCurentItem()->setValue(getCurentItem()->def);
-				getCurentItem()->saveValue();
-				btn1=0;
-				btn2=0;
-				return true;
-			}
-			return false;
-		}
+	inline bool doubleBtn(uint8_t &btn1, uint8_t &btn2) {
 
+		if (btn1 >= 1 && btn2 >= 1 && btn1++ + btn2++ < 4){
+			getCurentItem()->saveValue();
+			led(getCurentItem()->diode,false);
+			if (curIndex < maxIndex - 1) {
+				curIndex++;
+			} else
+				curIndex = 0;
+			return true;
+		}
+		return false;
+	}
+
+	void releasePlus(){
+		clampPlus=false;
+	}
+
+	void releaseMinus(){
+		clampMinus=false;
+	}
 
 	void plus(){
 		MenuItem* item = getCurentItem();
@@ -224,45 +222,48 @@ public:
 	}
 
 	void minus(){
+
 		MenuItem* item = getCurentItem();
 		if(item->getValue(false) > item->min)
 			item->setValue(item->getValue(false)-0.1);
 	}
 
 	void longPlus(){
-		getCurentItem()->saveValue();
+		clampPlus=true;
+	//	getCurentItem()->saveValue();
 
-		if(curIndex < maxIndex-1){
-			curIndex++;
-		}else{
-			curIndex=0;
-			curCH=!curCH;
+	//	if(curIndex < maxIndex-1){
+		//	curIndex++;
+		//}else{
+		//	curIndex=0;
+		//	curCH=!curCH;
 		//	if(curCH){
 		///		led(6,false);led(7,true);
 		///	}else{
 		//		led(7,false);led(6,true);
 		//	}
-		}
+		//}
 
-		led(getCurentItem()->diode,true);
+		//led(getCurentItem()->diode,true);
 	}
 
 	void longMinus(){
-		getCurentItem()->saveValue();
+		clampMinus=true;
+//		getCurentItem()->saveValue();
 
-		if(curIndex > 0 ){
-			curIndex--;
-		}else{
-			curIndex=maxIndex-1;
-			curCH=!curCH;
+	//	if(curIndex > 0 ){
+	//		curIndex--;
+	//	}else{
+	//		curIndex=maxIndex-1;
+			//curCH=!curCH;
 			//if(curCH){
 		//		led(6,false);led(7,true);
 		//	}else{
 		//		led(7,false);led(6,true);
 		//	}
-		}
+		//}
 
-		led(getCurentItem()->diode,true);
+		//led(getCurentItem()->diode,true);
 	}
 
 	 MenuItem* getCurentItem() {
@@ -272,11 +273,7 @@ public:
 	uint8_t getCurentIndex(){
 		 return curIndex ;
 	 }
-	 void firstRun(){
-		if( _firstRun){
-			led(getCurentItem()->diode,true);
-		}
-	 }
+
 	void display();
 
 
