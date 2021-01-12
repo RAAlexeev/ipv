@@ -16,21 +16,6 @@
 
 MenuItem  ServiceMenu::items[]={
 			 MenuItem(
-					 [](){ return  EEPROM.kA4_20()/10.f;}
-			 	 	,[](float32_t v){ EEPROM.kA4_20.set(round(v*10)); }
-			 	 	,4,0,-100,100,0
-			 	 	 ),
-			 MenuItem(
-					 [](){ return  EEPROM.kB4_20()/10.f;}
-			 	 	,[](float32_t v){ EEPROM.kB4_20.set(round(v*10)); }
-			 	 	,5,0,-100,100,0
-			 ),
-			 MenuItem(
-					 [](){ return  EEPROM.relayDelay()/10.f;}
-			 	 	,[](float32_t v){ EEPROM.relayDelay.set(round(v*10)); }
-			 	 	,0,10,0,100,0
-			 ),
-			 MenuItem(
 					 [](){ return EEPROM.K1()/10.f;},
 	 	 	 	 	 [](float32_t v){ EEPROM.K1.set(round(v*10)); }
 					 ,2,0,-100,100,1
@@ -38,7 +23,7 @@ MenuItem  ServiceMenu::items[]={
 			 MenuItem(
 					 [](){ return EEPROM.range1()/10.f;},
 	 	 	 	 	 [](float32_t v){ EEPROM.range1.set(round(v*10)); }
-					 ,1,0,10,99,1
+					 ,1,0,0,99,1
 			 ),
 			 MenuItem(
 					 [](){ return EEPROM.K2()/10.f;},
@@ -48,13 +33,32 @@ MenuItem  ServiceMenu::items[]={
 			 MenuItem(
 					 [](){ return EEPROM.range2()/10.f;},
 	 	 	 	 	 [](float32_t v){ EEPROM.range2.set(round(v*10)); }
-					 ,1,0,10,99,2
+					 ,1,0,0,99,2
 			 ),
-
+			 MenuItem(
+					 [](){ return  EEPROM.relayDelay()/10.f;}
+			 	 	,[](float32_t v){ EEPROM.relayDelay.set(round(v*10)); }
+			 	 	,0,10,0,100,0
+			 ),
+			 MenuItem(
+					 [](){ return  0.f;}
+			 	 	,[](float32_t v){if(round(v)==35){ EEPROM.reset(); NVIC_SystemReset();}}
+			 	 	,3,0,0,100,0
+			 ),
+			 MenuItem(
+					 [](){ return  EEPROM.kA4_20()/10.f;}
+			 	 	,[](float32_t v){ EEPROM.kA4_20.set(round(v*10)); }
+			 	 	,4,0,-100,100,0
+			 	 	 ),
+			 MenuItem(
+					 [](){ return  EEPROM.kB4_20()/10.f;}
+			 	 	,[](float32_t v){ EEPROM.kB4_20.set(round(v*10)); }
+			 	 	,5,0,-100,100,0
+			 ),
 
 };
 
-ServiceMenu serviceMenu=ServiceMenu(sizeof(ServiceMenu::items)/sizeof(MenuItem));
+ServiceMenu serviceMenu = ServiceMenu(sizeof(ServiceMenu::items)/sizeof(MenuItem));
 
 MenuItem  Menu::items[]={
 			 MenuItem(
@@ -107,7 +111,7 @@ Menu menu=Menu(sizeof(Menu::items)/sizeof(MenuItem));
 
 void Menu::display(){
 
-	SC39_show(getCurentItem()->getValue( curIndex < 3 ), digPos);
+	SC39_show(getCurentItem()->getValue( curIndex <= 3 ), digPos);
 
 
 }

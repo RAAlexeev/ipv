@@ -13,47 +13,56 @@ extern uint8_t service;
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
  {
-	 extern uint8_t but1pressed;
+	extern uint8_t but1pressed;
+	extern uint8_t but2pressed;
    switch( GPIO_Pin )
    {
      case BUT1_Pin:
         if ( GPIO_PIN_RESET == HAL_GPIO_ReadPin( BUT1_GPIO_Port, BUT1_Pin ) )
          {
-              
-               osTimerStart(myTimerBUT1Handle, 30 );
 
-         } else if( but1pressed > 0){
+
+        	osTimerStart(myTimerBUT1Handle, 70 );
+
+         } else {
         	 serviceMenu.releaseMinus();
-        	 if(  but1pressed  < 7 ){//кнопка была нажата боле 30мс и  отпущена{
+       // 	 if(  but1pressed  < 7 ){//кнопка была нажата боле 30мс и  отпущена{
 
 
-				if(service && service < 5)
+				if(service && service < 5){
 					  service++;
-				else if(service)
+
+				}else if(service)
 					  serviceMenu.minus();
+
 				 but1pressed = 0;
 				 osTimerStop(myTimerBUT1Handle);
         	 }
-         }
+       //  }
      break;
 
      case BUT2_Pin:
+
          if ( GPIO_PIN_RESET == HAL_GPIO_ReadPin( BUT2_GPIO_Port, BUT2_Pin ) )
          {
-            osTimerStart(myTimerBUT2Handle, 30 );
+
+        	osTimerStart(myTimerBUT2Handle, 70 );
            
          } else{ serviceMenu.releasePlus(); //кнопка была отпущена
            	 osTimerStop(myTimerBUT2Handle);//
-           	 extern uint8_t but2pressed;
 
 
-           	 if( but2pressed > 0 && (but2pressed < 7 || !menu.isEdit)){//кнопка была нажата боле 30мс и  отпущена
-        	  if(!service)
-        		  menu.switchCH_edit();
-        	  else{
-        		  if(service < 5)
+         if(but2pressed > 0 ){//кнопка была нажата боле 30мс и  отпущена
+        {
+        	if(!service){
+        	if(but2pressed < 3 || !menu.isEdit )
+        		menu.switchCH_edit();
+        	}else
+        	if(service < 5){
         			  service++;
-        		  else
+
+
+        		  }else
         			  serviceMenu.plus();
         	  }
            	 }

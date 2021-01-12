@@ -29,7 +29,7 @@ uint8_t mb_buf_out_count;
 uint8_t* p_mb_buf_in = mb_buf_in;
 #define mb_buf_in p_mb_buf_in
 inline uint16_t mb_reg(uint32_t index, uint16_t value=0xFFFF ){
-	uint16_t outCtrl(uint16_t x = 0xFFFF);
+extern	uint16_t outCtrl(uint16_t x = 0xFFFF);
 	static union fu_t{
 		float32_t f;
 		uint32_t ui;

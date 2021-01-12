@@ -71,11 +71,10 @@ public:
 	}
 	inline bool doubleBtn(uint8_t &btn1, uint8_t &btn2) {
 		if(isEdit)
-		if(btn1 >= 1 && btn2 >= 1){
+		if(btn1 >= 2 && btn2 >= 2){
 			getCurentItem()->setValue(getCurentItem()->def);
 			getCurentItem()->saveValue();
-			btn1=0;
-			btn2=0;
+
 			return true;
 		}
 		return false;
@@ -180,11 +179,11 @@ public:
 extern class ServiceMenu {
 
 	uint8_t curIndex = 0;
-const uint8_t maxIndex;
+
 	bool clampPlus=false, clampMinus=false;
 public:
 	static MenuItem  items[];
-
+	uint8_t maxIndex;
 
 
 
@@ -217,15 +216,17 @@ public:
 
 	void plus(){
 		MenuItem* item = getCurentItem();
-		if(item->getValue(false) < item->max)
-			item->setValue(item->getValue(false)+0.1);
+		float32_t v = item->getValue(false);
+		if(v < item->max)
+			item->setValue(v +((v < 10)?0.1:1));
 	}
 
 	void minus(){
 
 		MenuItem* item = getCurentItem();
-		if(item->getValue(false) > item->min)
-			item->setValue(item->getValue(false)-0.1);
+		float32_t v = item->getValue(false);
+		if(v > item->min)
+			item->setValue(v - ((v < 10)?0.1:1));
 	}
 
 	void longPlus(){

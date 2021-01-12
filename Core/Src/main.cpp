@@ -117,7 +117,7 @@ osStaticSemaphoreDef_t myCountingSemMBcontrolBlock __attribute__((section(".ccmr
 
 uint8_t	but1pressed = 0, but2pressed = 0,  service = 0;
 EEPROM_t EEPROM=EEPROM_t();
-SignalChenal  SignalChenal::instances[]={SignalChenal(EEPROM.K1,EEPROM.range1),SignalChenal(EEPROM.K1,EEPROM.range1)};
+SignalChenal  SignalChenal::instances[]={SignalChenal(EEPROM.K1,EEPROM.range1),SignalChenal(EEPROM.K2,EEPROM.range2)};
 
  void PWM(float  velocity, float min, float max);
 /* USER CODE END PV */
@@ -1501,27 +1501,39 @@ uint16_t outCtrl(uint16_t _codeActivation = 0xFFFF){
   */
 //uint32_t	runCnt = 0;
 static uint8_t  testVelocity (float32_t v,float32_t porog1, float32_t porog2 ,uint32_t &relay_delay){
-uint8_t ret=0;
-
-
+	static	uint8_t ret=0;
+					static uint8_t delay1 =0;
+					static uint8_t delay2 =0;
 					if(relay_delay)relay_delay--;
-					else{ if(porog1 != 0 &&( v > porog1 )){
+					else{
+
+						if(porog1 != 0 &&( v > porog1 )){
+
 							if(!outCtrl()||outCtrl()==555)
+							if(++delay1 > 10)
 								relay1(true);
-							ret=(1<<4);//led(4,false,false);
+							ret|=(1<<3);
 					 	 }else if( v < (porog1 - v/10)){
+					 		delay1=0;
+					 		ret &= ~(1<<3);
 					 		 if(!outCtrl())
 					 			 relay1(false);
-					 		 	}
+					 	}
 
 					 	 if(porog2 != 0 &&( v > porog2 )){
 					 		 if(!outCtrl()||outCtrl()==555)
-					 			 relay2(true);
-					 	 	 ret|=(1<<5);//led(4,false,false);
+					 			if(++delay2 > 10)
+					 				relay2(true);
+					 		ret|=(1<<2);
+					 	 //	 ret|=(1<<3);//led(4,false,false);
 						 }else if( v < (porog2 - v/10)){
+							 ret &= ~(1<<2);
+							 delay2=0;
 							 if(!outCtrl())
 								relay2(false);
-						 	 	}
+
+						}
+
 					};
 
 return ret;
@@ -1553,18 +1565,24 @@ void StartDefaultTask(void const * argument)
    //menuInit();
 
 		uint16_t tout = 0xF;
-		bool onlyOne = true;
+
 	/* Infinite loop */
   for(;;)
   {
 
+		static	bool once = true;
+		  if( once&& service > 1 && service < 5 && ( GPIO_PIN_SET == HAL_GPIO_ReadPin( BUT2_GPIO_Port, BUT2_Pin ) ) ){
+			   serviceMenu.maxIndex-=2;
+			   once=false;
+		  }
 	  if(service >= 5){
+
 
 		  serviceMenu.display();
 		 switch( serviceMenu.getCurentIndex() ){
-			 case 0:PWM(0,EEPROM.range1()/10.f);
+			 case 6:PWM(0,EEPROM.range1()/10.f);
 			 break;
-			 case 1:PWM(EEPROM.range1()/10.f,EEPROM.range1()/10.f);
+			 case 7:PWM(EEPROM.range1()/10.f, EEPROM.range1()/10.f);
 			 break;
 			default:
 				  if(SignalChenal::getInstance(ADC1)->getVelocity() > SignalChenal::getInstance(ADC2)->getVelocity()){
@@ -1572,26 +1590,29 @@ void StartDefaultTask(void const * argument)
 				  }else PWM(SignalChenal::getInstance(ADC2)->getVelocity(),EEPROM.range2()/10.f);
 		 }
 	  } else if(service==0||tout==0){
-		  if(onlyOne){
+			static	bool once = true;
+		  if(once){
 				led(6,false);
 				led(7,true);
 				led(2,true);
 				led(3,false);
-				onlyOne = false;
+				once = false;
+
 				service=0;
 		  }
 		  uint8_t msk;
-		  msk=testVelocity( SignalChenal::getInstance(ADC1)->getVelocity(), EEPROM.porog11.get()/10.f, EEPROM.porog12.get()/10.f, relay_delay);
-		  msk|=testVelocity( SignalChenal::getInstance(ADC2)->getVelocity(),EEPROM.porog21.get()/10.f,EEPROM.porog22.get()/10.f,relay_delay);
-		  extern void scale(uint16_t percent, uint8_t mask,void delay(uint16_t ms));
+		  menu.display();
+		  msk=testVelocity( SignalChenal::getInstance(ADC1)->getVelocity(), EEPROM.porog11()/10.f, EEPROM.porog12()/10.f, relay_delay);
+		  msk|=testVelocity( SignalChenal::getInstance(ADC2)->getVelocity(),EEPROM.porog21()/10.f,EEPROM.porog22()/10.f,relay_delay);
+		  extern void scale(uint16_t percent, uint8_t mask,void delay(uint16_t ms)=nullptr);
 		  if(!menu.isEdit)
-			  scale(SignalChenal::getInstance( ( (menu.getNch()==1)?ADC1:ADC2) )->getVelocity()*50/( (menu.getNch()==1)?EEPROM.range1():EEPROM.range2() ),msk,  [](uint16_t ms){osDelay(ms);});
+			  scale(SignalChenal::getInstance( ( (menu.getNch()==1)?ADC1:ADC2) )->getVelocity()*50/( (menu.getNch()==1)?EEPROM.range1():EEPROM.range2() ),msk );
 
 		  if(SignalChenal::getInstance(ADC1)->getVelocity() > SignalChenal::getInstance(ADC2)->getVelocity()){
 			PWM(SignalChenal::getInstance(ADC1)->getVelocity(),EEPROM.range1()/10);
 		  }else PWM(SignalChenal::getInstance(ADC2)->getVelocity(),EEPROM.range2()/10);
 
-		  menu.display();
+
 	  }else
 	  --tout;
 
@@ -1877,12 +1898,9 @@ void myTimeCallbackBUT2(void const * argument)
 //	}
 	but2pressed++;
 	if (service?serviceMenu.doubleBtn(but1pressed,but2pressed):menu.doubleBtn(but1pressed,but2pressed)) {
-		if(osOK != osTimerStart(myTimerBUT2Handle, 200)){
-				 Error_Handler();
-			};
+
 		return;
 	}
-
 
 
 		if (but2pressed == 20){
@@ -1906,7 +1924,7 @@ void myTimeCallbackBUT2(void const * argument)
 		}
 		else{
 
-			but2pressed = 0;
+		//	but2pressed = 0;
 		}
 
   /* USER CODE END myTimeCallbackBUT2 */
@@ -1921,13 +1939,11 @@ void myTimerCalbakBUT1(void const * argument)
 
 	but1pressed++;
 	if (service?serviceMenu.doubleBtn(but1pressed,but2pressed):menu.doubleBtn(but1pressed,but2pressed)){
-		if(osOK != osTimerStart(myTimerBUT1Handle, 200)){
-				 Error_Handler();
-			}
+
 		return;
 
 	}
-	if(but1pressed==2)
+	if(but1pressed==1)
 		{
 			if(service==0)menu.navigate(true);
 		}
@@ -1950,8 +1966,8 @@ void myTimerCalbakBUT1(void const * argument)
 		}
 
 	}
-	else
-		but1pressed = 0;
+//	else
+	//	but1pressed = 0;
 
   /* USER CODE END myTimerCalbakBUT1 */
 }

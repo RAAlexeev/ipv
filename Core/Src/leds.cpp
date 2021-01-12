@@ -32,10 +32,14 @@ void led(uint8_t n, bool on,  bool resetDelayMenuShow){
 }
 
 void scale(uint16_t percent, uint8_t mask,void delay(uint16_t ms) = NULL){
-
+	static bool  blink;
 	if(delayMenuShow){
 		--delayMenuShow;
-
+		if(blink)
+			port_IO[2] = ((( 0x200 | 0xFF ) << 16) |  ledIsOn | mask) | GPIO_BSRR_BS10;
+		else
+			port_IO[2] = ((( 0x200 | 0xFF | mask ) << 16) |  ledIsOn ) | GPIO_BSRR_BS10;
+		blink =!blink;
 		return;
 	};
 
@@ -53,7 +57,7 @@ void scale(uint16_t percent, uint8_t mask,void delay(uint16_t ms) = NULL){
 	//}
 	//else
 	//	p =( (port_IO[2]&(~ledIsOn)) | (ledIsOn<<16));
-static bool  blink;
+
 if(blink)
 		 port_IO[2] = ( p|mask) | ((0x200 | ( 0xFF & (~p))) << 16) | GPIO_BSRR_BS10;
 else

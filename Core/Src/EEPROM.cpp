@@ -91,26 +91,24 @@ template <typename T>
 	}
 
 
-
-
-
 template<typename T,int LENAREA>
 T EEPROM_t::VarEE<T,LENAREA>::_get(bool force) {
 	if (( this->wasRead )&& !force )
 		return value;
-	T ret = static_cast<T>(0xFFFFFFFF);
+
 	T buf[LENAREA / sizeof(T)];
 
 	while (!data_get((uint16_t*)buf, addr, LENAREA)) {
 	};
 
-	ret = buf[0];
-	for (volatile uint16_t i = 1; i < LENAREA / sizeof(T); i++) {
+	T ret = buf[0];
+	for ( uint16_t i = 1; i < LENAREA / sizeof(T); i++) {
 		ret ^= buf[i];
 	}
 	this->wasRead = true;
-	return ret;
+	return value=ret;
 }
+
 template<typename T,int LENAREA>
 T EEPROM_t::VarEE<T,LENAREA>::get( )  {
 			T res = _get();
@@ -136,7 +134,7 @@ T EEPROM_t::VarEE<T,LENAREA>::get( )  {
 template<typename T,int LENAREA>
 void EEPROM_t::VarEE<T,LENAREA>:: _set(T _val) {
 
-			if ((value == _val) && (get() == _val))
+			if (get() == _val)
 				return;
 			do {
 
