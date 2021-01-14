@@ -1359,7 +1359,7 @@ extern "C"
   void arm_biquad_cascade_df1_init_f32(
   arm_biquad_casd_df1_inst_f32 * S,
   uint8_t numStages,
-   float32_t const* pCoeffs,
+  float32_t * pCoeffs,
   float32_t * pState);
 
 

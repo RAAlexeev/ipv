@@ -62,8 +62,10 @@ uint16_t SC39_get_dig(uint8_t n, bool dot) {
 		 case 'H' :  HAL_GPIO_WritePin(GPIOD, A_Pin|D_Pin, GPIO_PIN_RESET);
 		 HAL_GPIO_WritePin(GPIOD, B_Pin|C_Pin|E_Pin|F_Pin|G_Pin, GPIO_PIN_SET);
 		 break;
-		 */case 'Ï': return (A_Pin | B_Pin | C_Pin | E_Pin | F_Pin | (dot ? DP_Pin : 0));
-
+		 */
+		 case 'Ï': return (A_Pin | B_Pin | C_Pin | E_Pin | F_Pin | (dot ? DP_Pin : 0));
+		 case 'Å':
+		 case 'E': return (A_Pin | D_Pin | E_Pin | F_Pin | G_Pin | (dot ? DP_Pin : 0));
 	}
 	return 0;
 }
@@ -76,49 +78,61 @@ inline uint8_t getDig(float32_t val, int8_t dig){
 	return static_cast<uint8_t>(static_cast<uint32_t>(val)/pow10 % 10);
 }
 
-static struct{bool d1, d2,dot1,dot2;} strob;
 
 
-void SC39_show(float32_t val, uint8_t strobe ) {
 
-	uint8_t d1, d2;
-	 if( val < 0 )
-		 strob.dot1=!strob.dot1;
-	 else
-		 strob.dot1=false;
+void SC39_show(float32_t val, uint8_t strobe, uint8_t d1, uint8_t d2 ){
+	static struct{bool d1, d2,dot1,dot2;} strob;
 	bool dot1=false,dot2=false;
-	val=std::abs(round(val*10)/10);
-	if( val == 0 ) strob.dot1=false;
-	if (val < 10) {
-		d1=	getDig(val*10,1);
-		d2 = getDig(val*10,0);//round((n - intPart) * 10);
-		dot1=true;
-	} else if (val < 100) {
-		d1=	getDig(val,1);
-		d2 = getDig(val,0);//round(intPart - intPart / 10 * 10);
-	} else if (val < 200) {
-		d1=	getDig(val,2);//intPart=static_cast<uint8_t>(round(n));
-		d2 = getDig(val,1);//round(round(n) - intPart / 100 * 100)/10;
-		dot2=true;
-	} else {
-		d1 = 'Ï';
-		d2 = 'Ï';
-		dot2=true;
+	if( isinff(val) ){
+		d1='E';
+		d2=0;
 	}
+	if( isnanf(val) ){
+		d1='E';
+		d2=1;
+	}
+	if(d1==0 ){
 
-	switch(strobe){
-	case 1: strob.d2 = !strob.d2;
+
+
+		 if( val < 0 )
+			 strob.dot1=!strob.dot1;
+		 else
+			 strob.dot1=false;
+
+		val=std::abs(round(val*10)/10);
+		if( val == 0 ) strob.dot1=false;
+		if (val < 10) {
+			d1=	getDig(val*10,1);
+			d2 = getDig(val*10,0);//round((n - intPart) * 10);
+			dot1=true;
+		} else if (val < 100) {
+			d1=	getDig(val,1);
+			d2 = getDig(val,0);//round(intPart - intPart / 10 * 10);
+		} else if (val < 200) {
+			d1=	getDig(val,2);//intPart=static_cast<uint8_t>(round(n));
+			d2 = getDig(val,1);//round(round(n) - intPart / 100 * 100)/10;
+			dot2=true;
+		} else {
+			d1 = 'Ï';
+			d2 = 'Ï';
+			dot2=true;
+		}
+
+		switch(strobe){
+		case 1: strob.d2 = !strob.d2;
+				strob.d1 = false;
+			break;
+		case 2: strob.d1 = !strob.d1;
+				strob.d2 = false;
+			break;
+		default:
 			strob.d1 = false;
-		break;
-	case 2: strob.d1 = !strob.d1;
 			strob.d2 = false;
-		break;
-	default:
-		strob.d1 = false;
-		strob.d2 = false;
-	};
+		};
 
-
+	}
 
 	d1=(strob.d1)?0:SC39_get_dig(d1,dot1&&!strob.dot1);
 	d2=(strob.d2)?0:SC39_get_dig(d2,dot2&&!strob.dot2);

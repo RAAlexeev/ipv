@@ -20,8 +20,9 @@ class SignalChenal{
 	const Filter filter = Filter();
 	std::function<uint16_t ()>const K;
 	std::function<uint16_t ()>const range;
-	CircularBuffer<float32_t,7> velocity_ =  CircularBuffer<float32_t,7>();
-	CircularBuffer<float32_t,7> acceleration_ =  CircularBuffer<float32_t,7>();
+	CircularBuffer<float32_t,8> velocity_ =  CircularBuffer<float32_t,8>();
+	CircularBuffer<float32_t,8> acceleration_ =  CircularBuffer<float32_t,8>();
+	CircularBuffer<uint16_t,8> state = CircularBuffer<uint16_t,8>();
 	float32_t y = 0;
 
 	float32_t * buffer = buffer2;
@@ -36,20 +37,32 @@ public:
 	static void HAL_ADC_M1ConvCpltCallback(DMA_HandleTypeDef * 	hdma);
 	void * swBuffer();
 	void calc();
-	inline float32_t getVelocity()const {
+	float32_t getState(float32_t v)const{
+		uint16_t s = state.average();
+		if(s < 4096/2-1000)
+			return NAN;
+		if(s > 4096/2+1000)
+			return INFINITY;
+		return v;
+	}
+	 float32_t getVelocity()const {
 
 		float32_t v = velocity_.average() * (range()/10.f);
 
-		return v+v*K()/1000;
+		return getState(v+v*K()/1000);
 	}
-	inline float32_t getAcceleration()const {
+	 float32_t getAcceleration()const {
 		float32_t a = acceleration_.average() * (range()/10.f);
-		return a+a*K()/1000;
+		return getState(a+a*K()/1000);
 	}
 	static  SignalChenal*  getInstance(void* hadc){
 		extern ADC_HandleTypeDef hadc1;
 		return &instances[(hadc == &hadc1 || hadc == ADC1)?0:1];
 	}
+	void putState(uint16_t v){
+		state.put(v);
+	}
+
 
 	static	void init();
 };

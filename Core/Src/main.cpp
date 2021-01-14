@@ -23,6 +23,7 @@
 #include "integrator.hpp"
 #include "myUtils.hpp"
 #include "SC39-11driver.h"
+#include "stm32f4xx_hal_adc_ex.h"
 /* USER CODE END Includes */
 
 
@@ -48,6 +49,8 @@
 /* Private variables ---------------------------------------------------------*/
 ADC_HandleTypeDef hadc1;
 ADC_HandleTypeDef hadc2;
+ADC_HandleTypeDef hadc3;
+
 DMA_HandleTypeDef hdma_adc1;
 DMA_HandleTypeDef hdma_adc2;
 
@@ -128,6 +131,7 @@ static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_ADC2_Init(void);
+static void MX_ADC3_Init(void);
 static void MX_CRC_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_RNG_Init(void);
@@ -237,6 +241,7 @@ int main(void){
   MX_DMA_Init();
   MX_ADC1_Init();
   MX_ADC2_Init();
+  MX_ADC3_Init();
   MX_CRC_Init();
   MX_I2C1_Init();
   MX_RNG_Init();
@@ -539,8 +544,79 @@ static void MX_ADC2_Init(void)
   /* USER CODE END ADC2_Init 2 */
 
 }
+/**
+  * @brief ADC3 Initialization Function
+  * @param None
+  * @retval None
+  */
 
+static void MX_ADC3_Init(void)
+{
 
+  /* USER CODE BEGIN ADC3_Init 0 */
+
+  /* USER CODE END ADC3_Init 0 */
+
+  ADC_ChannelConfTypeDef sConfig = {0};
+  ADC_InjectionConfTypeDef sConfigInjected = {0};
+
+  /* USER CODE BEGIN ADC3_Init 1 */
+
+  /* USER CODE END ADC3_Init 1 */
+  /**Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion)
+  */
+  hadc3.Instance = ADC3;
+  hadc3.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV8;
+  hadc3.Init.Resolution = ADC_RESOLUTION_12B;
+  hadc3.Init.ScanConvMode = ENABLE;
+  hadc3.Init.ContinuousConvMode = ENABLE;
+  hadc3.Init.DiscontinuousConvMode = DISABLE;
+  hadc3.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
+  hadc3.Init.ExternalTrigConv = ADC_SOFTWARE_START;
+  hadc3.Init.DataAlign = ADC_DATAALIGN_RIGHT;
+  hadc3.Init.NbrOfConversion = 1;
+  hadc3.Init.DMAContinuousRequests = DISABLE;
+  hadc3.Init.EOCSelection = ADC_EOC_SEQ_CONV;
+  if (HAL_ADC_Init(&hadc3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /**Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+  */
+  sConfig.Channel = ADC_CHANNEL_1;
+  sConfig.Rank = 1;
+  sConfig.SamplingTime = ADC_SAMPLETIME_480CYCLES;
+  if (HAL_ADC_ConfigChannel(&hadc3, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /**Configures for the selected ADC injected channel its corresponding rank in the sequencer and its sample time
+  */
+  sConfigInjected.InjectedChannel = ADC_CHANNEL_3;
+  sConfigInjected.InjectedRank = 1;
+  sConfigInjected.InjectedNbrOfConversion = 1;
+  sConfigInjected.InjectedSamplingTime = ADC_SAMPLETIME_480CYCLES;
+  sConfigInjected.ExternalTrigInjecConvEdge = ADC_EXTERNALTRIGINJECCONVEDGE_NONE;
+  sConfigInjected.ExternalTrigInjecConv = ADC_INJECTED_SOFTWARE_START;
+  sConfigInjected.AutoInjectedConv = ENABLE;
+  sConfigInjected.InjectedDiscontinuousConvMode = DISABLE;
+  sConfigInjected.InjectedOffset = 0;
+  if (HAL_ADCEx_InjectedConfigChannel(&hadc3, &sConfigInjected) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /**Configures for the selected ADC injected channel its corresponding rank in the sequencer and its sample time
+  */
+  sConfigInjected.InjectedChannel = ADC_CHANNEL_3;
+  if (HAL_ADCEx_InjectedConfigChannel(&hadc3, &sConfigInjected) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN ADC3_Init 2 */
+
+  /* USER CODE END ADC3_Init 2 */
+
+}
 /**
   * @brief CRC Initialization Function
   * @param None
@@ -1178,11 +1254,6 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(WC_GPIO_Port, WC_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : SENS2_FAIL_Pin SENS1_FAIL_Pin */
-  GPIO_InitStruct.Pin = SENS2_FAIL_Pin|SENS1_FAIL_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pins : RELAY_1_Pin RELAY_2_Pin */
   GPIO_InitStruct.Pin = RELAY_1_Pin|RELAY_2_Pin;
@@ -1500,10 +1571,9 @@ uint16_t outCtrl(uint16_t _codeActivation = 0xFFFF){
   * @retval None
   */
 //uint32_t	runCnt = 0;
-static uint8_t  testVelocity (float32_t v,float32_t porog1, float32_t porog2 ,uint32_t &relay_delay){
+static uint8_t  testVelocity (float32_t v,float32_t porog1, float32_t porog2 ,uint32_t &relay_delay, uint8_t &delay1, uint8_t &delay2){
 	static	uint8_t ret=0;
-					static uint8_t delay1 =0;
-					static uint8_t delay2 =0;
+
 					if(relay_delay)relay_delay--;
 					else{
 
@@ -1547,25 +1617,21 @@ void StartDefaultTask(void const * argument)
   /* USER CODE BEGIN 5 */
 	 uint32_t relay_delay=EEPROM.relayDelay();
 	extern uint32_t port_IO[3];
-	if(HAL_DMA_Start( &hdma_tim8_up, (uint32_t)&port_IO, (uint32_t)&GPIOD->BSRR, 3 ) != HAL_OK)
-	{
+	if(HAL_DMA_Start( &hdma_tim8_up, (uint32_t)&port_IO, (uint32_t)&GPIOD->BSRR, 3 ) != HAL_OK){
    		    _Error_Handler(__FILE__, __LINE__);
     };
-	  __HAL_TIM_ENABLE_DMA(&htim8, TIM_DMA_UPDATE);
-
-		 if( HAL_TIM_Base_Start(&htim8)!= HAL_OK)
-		  {
-		    _Error_Handler(__FILE__, __LINE__);
-		  };
-		  /* Enable the TIM Update DMA request */
+	__HAL_TIM_ENABLE_DMA(&htim8, TIM_DMA_UPDATE);
 
 
-		  //HAL_GPIO_WritePin(HG_1_GPIO_Port,HG_1_Pin,GPIO_PIN_SET);
-		  //HAL_GPIO_WritePin(A_GPIO_Port,A_Pin,GPIO_PIN_SET);
-   //menuInit();
+	if( HAL_TIM_Base_Start(&htim8)!= HAL_OK){
+	  _Error_Handler(__FILE__, __LINE__);
+	};
+
+	HAL_ADC_Start(&hadc3); // запускаем преобразование сигнала АЦП
+
 
 		uint16_t tout = 0xF;
-
+		uint8_t delay11=0, delay12=0,delay21=0, delay22=0;
 	/* Infinite loop */
   for(;;)
   {
@@ -1602,8 +1668,8 @@ void StartDefaultTask(void const * argument)
 		  }
 		  uint8_t msk;
 		  menu.display();
-		  msk=testVelocity( SignalChenal::getInstance(ADC1)->getVelocity(), EEPROM.porog11()/10.f, EEPROM.porog12()/10.f, relay_delay);
-		  msk|=testVelocity( SignalChenal::getInstance(ADC2)->getVelocity(),EEPROM.porog21()/10.f,EEPROM.porog22()/10.f,relay_delay);
+		  msk=testVelocity( SignalChenal::getInstance(ADC1)->getVelocity(), EEPROM.porog11()/10.f, EEPROM.porog12()/10.f, relay_delay, delay11, delay12);
+		  msk|=testVelocity( SignalChenal::getInstance(ADC2)->getVelocity(),EEPROM.porog21()/10.f,EEPROM.porog22()/10.f,relay_delay, delay21, delay22);
 		  extern void scale(uint16_t percent, uint8_t mask,void delay(uint16_t ms)=nullptr);
 		  if(!menu.isEdit)
 			  scale(SignalChenal::getInstance( ( (menu.getNch()==1)?ADC1:ADC2) )->getVelocity()*50/( (menu.getNch()==1)?EEPROM.range1():EEPROM.range2() ),msk );
@@ -1617,7 +1683,9 @@ void StartDefaultTask(void const * argument)
 	  --tout;
 
 	  osDelay(200);
-
+	  HAL_ADC_PollForConversion(&hadc3,100); // ждём окончания
+	  SignalChenal::getInstance(ADC2)->putState( HAL_ADC_GetValue(&hadc3));
+	  SignalChenal::getInstance(ADC1)->putState( HAL_ADCEx_InjectedGetValue(&hadc3, ADC_INJECTED_RANK_1));
 	  if(UartTimeOut++ > 6){
 		   if(	HAL_UART_DMAStop(&huart1)!= HAL_OK) {
 				  Error_Handler();

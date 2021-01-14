@@ -112,9 +112,8 @@ Menu menu=Menu(sizeof(Menu::items)/sizeof(MenuItem));
 void Menu::display(){
 
 	SC39_show(getCurentItem()->getValue( curIndex <= 3 ), digPos);
-
-
 }
+
 void ServiceMenu::display(){
 
 	switch(items[curIndex].ch){
