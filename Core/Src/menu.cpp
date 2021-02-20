@@ -23,7 +23,7 @@ MenuItem  ServiceMenu::items[]={
 			 MenuItem(
 					 [](){ return EEPROM.range1()/10.f;},
 	 	 	 	 	 [](float32_t v){ EEPROM.range1.set(round(v*10)); }
-					 ,1,0,0,99,1
+					 ,1,0,1,99,1
 			 ),
 			 MenuItem(
 					 [](){ return EEPROM.K2()/10.f;},
@@ -33,7 +33,7 @@ MenuItem  ServiceMenu::items[]={
 			 MenuItem(
 					 [](){ return EEPROM.range2()/10.f;},
 	 	 	 	 	 [](float32_t v){ EEPROM.range2.set(round(v*10)); }
-					 ,1,0,0,99,2
+					 ,1,0,1,99,2
 			 ),
 			 MenuItem(
 					 [](){ return  EEPROM.relayDelay()/10.f;}

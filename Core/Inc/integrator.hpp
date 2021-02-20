@@ -11,15 +11,15 @@
 #include "arm_math.h"
 #include "buffer.hpp"
 #include "Filter.h"
-#include "EEPROM.hpp"
-#include <functional>
+#include "IGetSet.h"
+
 
 class SignalChenal{
+	typedef float32_t (* const GetValue)();
 	static const uint32_t  BUFLEN  __attribute__((section(".ccmram")))= 4096u;
 	static  SignalChenal  instances[];
 	const Filter filter = Filter();
-	std::function<uint16_t ()>const K;
-	std::function<uint16_t ()>const range;
+	IGetSet &K,&range;
 	CircularBuffer<float32_t,8> velocity_ =  CircularBuffer<float32_t,8>();
 	CircularBuffer<float32_t,8> acceleration_ =  CircularBuffer<float32_t,8>();
 	CircularBuffer<uint16_t,8> state = CircularBuffer<uint16_t,8>();
@@ -30,7 +30,7 @@ class SignalChenal{
 
 public:
 	float32_t buffer1[BUFLEN], buffer2[BUFLEN];
-	SignalChenal(std::function<uint16_t(void)>const K, std::function<uint16_t (void)>const range):K(K),range(range){
+	SignalChenal(IGetSet &K, IGetSet &range):K(K),range(range){
 
 	}
 	static void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc);
@@ -47,13 +47,13 @@ public:
 	}
 	 float32_t getVelocity()const {
 
-		float32_t v = velocity_.average() * (range()/10.f);
+		float32_t v = velocity_.average() * (range.get()/10.f);
 
-		return getState(v+v*K()/1000);
+		return getState(v+v*K.get()/1000);
 	}
 	 float32_t getAcceleration()const {
-		float32_t a = acceleration_.average() * (range()/10.f);
-		return getState(a+a*K()/1000);
+		float32_t a = acceleration_.average() * (range.get()/10.f);
+		return getState(a+a*K.get()/1000);
 	}
 	static  SignalChenal*  getInstance(void* hadc){
 		extern ADC_HandleTypeDef hadc1;

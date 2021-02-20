@@ -120,7 +120,8 @@ osStaticSemaphoreDef_t myCountingSemMBcontrolBlock __attribute__((section(".ccmr
 
 uint8_t	but1pressed = 0, but2pressed = 0,  service = 0;
 EEPROM_t EEPROM=EEPROM_t();
-SignalChenal  SignalChenal::instances[]={SignalChenal(EEPROM.K1,EEPROM.range1),SignalChenal(EEPROM.K2,EEPROM.range2)};
+SignalChenal  SignalChenal::instances[]={SignalChenal(serviceMenu.items[0],serviceMenu.items[1])
+										,SignalChenal(serviceMenu.items[2],serviceMenu.items[3])};
 
  void PWM(float  velocity, float min, float max);
 /* USER CODE END PV */
@@ -1324,12 +1325,12 @@ void testMaxVelocity(float * velocity,uint8_t * tOut, float max , GPIO_TypeDef *
     } 
 }
 
-void PWM(float32_t velocity,  float32_t max)
+void PWM(float32_t velocity,   float32_t max)
 {
 #define SENS (10)
 	uint32_t ar =__HAL_TIM_GET_AUTORELOAD(&htim3);
-	float32_t dc = velocity*(ar - ar/5)/max *(1+serviceMenu.items[1].getValue(false)/SENS);
-	uint16_t dutyCycle = (uint16_t)(dc + ar/5 + ar*serviceMenu.items[0].getValue(false)/SENS);
+	float32_t dc = velocity*(ar - ar/5)/max *(1+max/SENS);
+	uint16_t dutyCycle = (uint16_t)(dc + ar/5 + ar*max/SENS);
 
 //	uint16_t dutyCycle= 0x00FF;
   __HAL_TIM_SET_COMPARE( &htim3, TIM_CHANNEL_1, dutyCycle );

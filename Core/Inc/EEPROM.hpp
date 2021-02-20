@@ -10,7 +10,7 @@
 
 
 #include"myUtils.hpp"
-
+#include "IGetSet.h"
 extern I2C_HandleTypeDef hi2c1;
 extern void delay(uint32_t ms);
 
@@ -60,7 +60,7 @@ public:
 	};
 */
 	template<typename T = uint16_t, int LENAREA = 32>
-	class  VarEE {
+	class  VarEE:public IGetSet {
 
 		// T value = 0;
 		bool wasRead = false;
@@ -87,7 +87,7 @@ public:
 			return _val;
 		}
 
-		T get()  ;
+		float32_t get()  ;
 
 
 		T operator()();

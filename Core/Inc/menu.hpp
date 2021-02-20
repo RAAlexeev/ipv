@@ -4,10 +4,12 @@
 #include "main.h"
 #include "arm_math.h"
 #include "myutils.hpp"
+#include "IgetSet.h"
+
 extern void led(uint8_t n, bool on, bool resetDelayMenuShow=true);
 
 
-#endif
+
 
 typedef void (* const Action)(float32_t val);
 
@@ -15,24 +17,28 @@ typedef float32_t (* const GetValue)();
 
 
 
-class MenuItem {
+class MenuItem:public IGetSet {
 
 	bool editable = false;
 	float32_t value = NAN;
-	Action action, setVal;
 	GetValue getVal;
+	Action  setVal, action;
+
 
 
 public:
-	int16_t def,min,max;
 	uint8_t diode,ch;
+	int16_t def,min,max;
 
-	MenuItem(const GetValue getValue = NULL, const Action setVal = NULL,uint8_t const led=0xff,int16_t  const def=0,int16_t const min=0, const int16_t max=199,
-			uint8_t ch = 0, const Action act = NULL) :
-			action(act), setVal(setVal), getVal(getValue), def(def),min(min),max(max),ch(ch) {
+
+	MenuItem( GetValue const getVal = nullptr,  Action const setVal = nullptr,uint8_t const led=0xff,int16_t  const def=0,int16_t const min=0, const int16_t max=199,
+			uint8_t ch = 0, const Action act = nullptr) :
+				 getVal(getVal), setVal(setVal),def(def),min(min),max(max),ch(ch),action(act) {
 			if(led!=0xff ) diode = led;
 	}
+	float32_t get(){
 
+	}
 	float32_t getValue(bool read = true)  {
 
 		if(getVal &&( read|| isnan(value)))
@@ -281,3 +287,4 @@ public:
 
 } serviceMenu;
 
+#endif

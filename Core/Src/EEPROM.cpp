@@ -110,7 +110,7 @@ T EEPROM_t::VarEE<T,LENAREA>::_get(bool force) {
 }
 
 template<typename T,int LENAREA>
-T EEPROM_t::VarEE<T,LENAREA>::get( )  {
+float32_t EEPROM_t::VarEE<T,LENAREA>::get( )  {
 			T res = _get();
 
 			if (copy1 != NULL) {
